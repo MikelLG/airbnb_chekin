@@ -477,17 +477,12 @@ let airbnbData = {};
 let dniData = {};
 
 // ═══════════════════════════════════════════════════════════
-// API KEY
+// API KEY — injected at build time by GitHub Actions
 // ═══════════════════════════════════════════════════════════
-function getKey() { return localStorage.getItem('ak') || ''; }
-function saveKey() {
-  const k = document.getElementById('api-key-inp').value.trim();
-  if (!k.startsWith('sk-ant-')) { alert('La key debe empezar con sk-ant-'); return; }
-  localStorage.setItem('ak', k);
-  document.getElementById('api-banner').style.display = 'none';
-}
+const _AK = '__ANTHROPIC_API_KEY__';
+function getKey() { return _AK; }
 function initKey() {
-  if (getKey()) document.getElementById('api-banner').style.display = 'none';
+  document.getElementById('api-banner').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════════
