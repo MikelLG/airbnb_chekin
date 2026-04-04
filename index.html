@@ -385,40 +385,11 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
       </div>
     </div>
 
-    <!-- Dirección postal -->
-    <div class="card">
-      <div class="card-label">Dirección postal del huésped</div>
-      <div class="form-grid">
-        <div class="field">
-          <label>Calle y número</label>
-          <input type="text" id="f-adreca" placeholder="Calle Mayor, 1">
-        </div>
-        <div class="row2">
-          <div class="field">
-            <label>País (ISO-3)</label>
-            <input type="text" id="f-pais" placeholder="ESP" maxlength="3" value="ESP">
-          </div>
-          <div class="field">
-            <label>Código postal</label>
-            <input type="text" id="f-cp" placeholder="08001">
-          </div>
-        </div>
-        <div class="row2" id="row-esp">
-          <div class="field">
-            <label>Prov. INE (ej: 08)</label>
-            <input type="text" id="f-prov" placeholder="08" maxlength="2">
-          </div>
-          <div class="field">
-            <label>Mun. INE (ej: 080193)</label>
-            <input type="text" id="f-mun" placeholder="080193" maxlength="6">
-          </div>
-        </div>
-        <div class="field" id="row-ext" style="display:none">
-          <label>Localidad</label>
-          <input type="text" id="f-loc" placeholder="Paris">
-        </div>
-      </div>
-    </div>
+    <!-- Dirección postal — campos ocultos con valores vacíos -->
+    <input type="hidden" id="f-adreca" value="">
+    <input type="hidden" id="f-pais" value="ESP">
+    <input type="hidden" id="f-cp" value="">
+    <input type="hidden" id="f-loc" value="">
 
     <button class="btn btn-gold" onclick="generateFile()">Generar fichero Mossos →</button>
     <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
@@ -791,12 +762,7 @@ function fillStep3() {
     document.getElementById('stay-ai-badge').style.display = 'inline-block';
   }
 
-  // Country logic
-  document.getElementById('f-pais').addEventListener('input', function() {
-    const esp = this.value.toUpperCase() === 'ESP';
-    document.getElementById('row-esp').style.display = esp ? 'grid' : 'none';
-    document.getElementById('row-ext').style.display = esp ? 'none' : 'block';
-  });
+  // Country logic — simplified, no INE codes needed
 }
 
 function setAI(id, val) {
@@ -871,9 +837,9 @@ function generateFile() {
     v('f-email')||'',
     (v('f-suport')||'').toUpperCase(),
     v('f-adreca')||'',
-    pais==='ESP' ? (v('f-prov')||'') : '',
-    pais==='ESP' ? (v('f-mun')||'') : '',
-    pais!=='ESP' ? (v('f-loc')||'') : '',
+    '',
+    '',
+    (v('f-loc')||''),
     pais,
     v('f-cp')||''
   ];
