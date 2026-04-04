@@ -812,6 +812,9 @@ function generateFile() {
 
   const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, hconf, '1', 'V24'].join('|');
 
+  // Auto-detect contract type: R (reserva) if entry is future, C (contracte) if today or past
+  const tipusContracte = entFmt > fmtDate(now) ? 'R' : 'C';
+
   // Clean phone: remove spaces, +, dashes — only digits, max 20
   const telClean = (v('f-tel')||'').replace(/[^0-9]/g, '').slice(0, 20);
 
@@ -819,29 +822,38 @@ function generateFile() {
   const contractDate = entFmt <= fmtDate(now) ? entFmt : fmtDate(now);
 
   const campos = [
-    '2', docE, docX, tipo,
-    dniData.data_exp || '',
-    (v('f-ap1')||'').toUpperCase(),
-    (v('f-ap2')||'').toUpperCase(),
-    (v('f-nom')||'').toUpperCase(),
-    v('f-sexe')||'',
-    naix,
-    (v('f-nac')||'ESP').toUpperCase(),
-    entFmt, hIn, salFmt, hOut,
-    contractDate, 'C',
-    reserva.toUpperCase(),
-    v('f-nviat')||'1',
-    '1', 'N', 'PLATF',
-    telClean,
-    '',
-    v('f-email')||'',
-    (v('f-suport')||'').toUpperCase(),
-    v('f-adreca')||'',
-    '',
-    '',
-    (v('f-loc')||''),
-    pais,
-    v('f-cp')||''
+    '2',                                  // 1. Tipus registre
+    docE,                                 // 2. Num doc espanyol
+    docX,                                 // 3. Num doc estranger
+    tipo,                                 // 4. Tipus document
+    dniData.data_exp || '',               // 5. Data expedició
+    (v('f-ap1')||'').toUpperCase(),       // 6. Primer cognom
+    (v('f-ap2')||'').toUpperCase(),       // 7. Segon cognom
+    (v('f-nom')||'').toUpperCase(),       // 8. Nom
+    v('f-sexe')||'',                      // 9. Sexe
+    naix,                                 // 10. Data naixement
+    (v('f-nac')||'ESP').toUpperCase(),    // 11. País nacionalitat
+    entFmt,                               // 12. Data entrada
+    hIn,                                  // 13. Hora entrada
+    salFmt,                               // 14. Data sortida
+    hOut,                                 // 15. Hora sortida
+    contractDate,                         // 16. Data contracte
+    tipusContracte,                       // 17. Tipus contracte (C=actual, R=reserva futura)
+    reserva.toUpperCase(),               // 18. Num contracte
+    v('f-nviat')||'1',                    // 19. Num viatgers
+    '1',                                  // 20. Num habitacions
+    'N',                                  // 21. Internet
+    'PLATF',                              // 22. Tipus pagament
+    telClean,                             // 23. Telèfon
+    '',                                   // 24. Parentesc
+    v('f-email')||'',                     // 25. Email
+    (v('f-suport')||'').toUpperCase(),    // 26. Num suport doc
+    '',                                   // 27. Adreça
+    '',                                   // 28. Província
+    '',                                   // 29. Municipi
+    '',                                   // 30. Localitat
+    '',                                   // 31. País postal
+    ''                                    // 32. Codi postal
   ];
 
   fileContent = linEstab + '\r\n' + campos.join('|');
