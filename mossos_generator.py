@@ -9,6 +9,7 @@ Uso:
   python mossos_generator.py --listar           # Lista ficheros generados
 """
 
+
 import json
 import os
 import sys
