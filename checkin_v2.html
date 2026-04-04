@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Check-in · Anika's House</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0F0D0B;
+  --bg2: #1A1612;
+  --bg3: #242018;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.18);
+  --gold: #C9A84C;
+  --gold2: #E8C97A;
+  --gold-dim: rgba(201,168,76,0.12);
+  --text: #F0EBE0;
+  --text2: #9A9080;
+  --text3: #635C52;
+  --success: #4E9E6A;
+  --err: #C05050;
+  --r: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-weight:300;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* HEADER */
+header{padding:18px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.logo-mark{width:36px;height:36px;background:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:16px;color:var(--bg);font-weight:600;flex-shrink:0;}
+.logo-text h1{font-family:'Playfair Display',serif;font-size:15px;font-weight:400;color:var(--text);}
+.logo-text p{font-size:10px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:1px;}
+
+/* PROGRESS */
+.prog-wrap{background:var(--bg2);padding:14px 20px;border-bottom:1px solid var(--border);}
+.prog-bar{display:flex;gap:5px;}
+.p-seg{height:2px;flex:1;background:var(--border);border-radius:2px;transition:background .4s;}
+.p-seg.done{background:var(--gold);}
+.p-seg.cur{background:var(--gold2);}
+.prog-label{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:8px;}
+
+/* MAIN */
+main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
+
+/* STEPS */
+.step{display:none;}
+.step.active{display:block;animation:rise .35s ease;}
+@keyframes rise{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+.eyebrow{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;font-weight:500;}
+.title{font-family:'Playfair Display',serif;font-size:24px;font-weight:400;line-height:1.25;margin-bottom:7px;}
+.subtitle{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:22px;}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;}
+.card-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;font-weight:500;}
+
+/* CAMERA */
+.cam-wrap{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;margin-bottom:12px;}
+#vid{width:100%;height:100%;object-fit:cover;display:block;}
+#snap-canvas{display:none;}
+.cam-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.doc-frame{width:86%;height:62%;border:2px solid var(--gold);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
+.cam-tip{color:#fff;font-size:12px;margin-top:10px;opacity:.75;text-align:center;}
+.corner{position:absolute;width:16px;height:16px;border-color:var(--gold2);border-style:solid;opacity:.9;}
+.c-tl{top:19%;left:7%;border-width:2px 0 0 2px;border-radius:3px 0 0 0;}
+.c-tr{top:19%;right:7%;border-width:2px 2px 0 0;border-radius:0 3px 0 0;}
+.c-bl{bottom:19%;left:7%;border-width:0 0 2px 2px;border-radius:0 0 0 3px;}
+.c-br{bottom:19%;right:7%;border-width:0 2px 2px 0;border-radius:0 0 3px 0;}
+
+/* PREVIEW */
+.preview-box{position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;}
+#preview-img{width:100%;border-radius:12px;display:none;border:1px solid var(--border2);}
+.retake-btn{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.7);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border2);border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-bottom:12px;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--gold);background:var(--gold-dim);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone .u-icon{font-size:28px;margin-bottom:10px;}
+.upload-zone h3{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;margin-bottom:4px;}
+.upload-zone p{font-size:12px;color:var(--text3);}
+
+/* EXTRACTING */
+.extracting{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:36px;text-align:center;}
+.spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.extract-status{font-size:14px;color:var(--text2);line-height:1.5;}
+
+/* FORM */
+.form-grid{display:grid;gap:12px;}
+.row2{grid-template-columns:1fr 1fr;display:grid;gap:12px;}
+.field label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;font-weight:500;}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border2);border-radius:10px;background:var(--bg3);font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);transition:border-color .2s;appearance:none;}
+.field textarea{resize:vertical;min-height:100px;line-height:1.5;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);}
+.field input.ai{border-color:var(--success);background:rgba(78,158,106,.08);}
+.field select option{background:var(--bg3);}
+.ai-badge{display:inline-block;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--success);background:rgba(78,158,106,.15);padding:1px 7px;border-radius:20px;margin-left:5px;font-weight:500;}
+
+/* AIRBNB EXTRACT */
+.airbnb-result{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-top:10px;display:none;}
+.airbnb-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.airbnb-row:last-child{border:none;}
+.airbnb-row span:first-child{color:var(--text3);}
+.airbnb-row span:last-child{font-weight:400;}
+
+/* BUTTONS */
+.btn{width:100%;padding:15px;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:8px;}
+.btn-gold{background:var(--gold);color:var(--bg);}
+.btn-gold:hover{background:var(--gold2);}
+.btn-gold:active{transform:scale(.98);}
+.btn-gold:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed;}
+.btn-out{background:transparent;color:var(--text2);border:1.5px solid var(--border2);}
+.btn-out:hover{border-color:var(--text2);color:var(--text);}
+.btn-dark{background:var(--bg3);color:var(--text);border:1px solid var(--border2);}
+.btn-dark:hover{border-color:var(--gold);}
+
+/* CAM BUTTONS */
+.cam-btns{display:flex;gap:10px;}
+.cam-btns .btn{flex:1;margin-top:0;}
+
+/* ERROR / INFO */
+.err{background:rgba(192,80,80,.1);border:1px solid rgba(192,80,80,.3);border-radius:9px;padding:12px 14px;font-size:13px;color:#E07070;margin-bottom:12px;display:none;}
+.info{background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--gold2);margin-bottom:14px;line-height:1.5;}
+
+/* SUCCESS */
+.success-wrap{text-align:center;padding:20px 0;}
+.success-icon{width:68px;height:68px;background:rgba(78,158,106,.15);border:2px solid var(--success);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;}
+.download-card{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:var(--gold);color:var(--bg);border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-top:16px;transition:background .2s;text-align:left;}
+.download-card:hover{background:var(--gold2);}
+.download-card .d-icon{font-size:22px;flex-shrink:0;}
+.download-card .d-sub{font-size:11px;opacity:.7;display:block;margin-top:2px;font-weight:300;}
+
+.mossos-steps{margin-top:20px;}
+.mossos-steps h4{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;font-weight:500;}
+.m-step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.5;}
+.m-step:last-child{border:none;}
+.m-num{width:20px;height:20px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;margin-top:1px;}
+.m-step a{color:var(--gold);text-decoration:none;}
+.m-step a:hover{text-decoration:underline;}
+
+/* API SETUP */
+.setup-banner{background:var(--bg2);border:1px solid rgba(201,168,76,.25);border-radius:var(--r);padding:18px;margin-bottom:18px;}
+.setup-banner h3{font-size:13px;font-weight:500;color:var(--gold2);margin-bottom:4px;}
+.setup-banner p{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5;}
+
+/* MOSSOS UPLOAD SECTION */
+.upload-mossos-wrap{margin-top:16px;}
+.upload-mossos-wrap h4{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;font-weight:500;}
+
+@media(max-width:460px){
+  .row2{grid-template-columns:1fr;}
+  main{padding:22px 14px 80px;}
+  .title{font-size:21px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">A</div>
+  <div class="logo-text">
+    <h1>Anika's House</h1>
+    <p>Check-in en línea</p>
+  </div>
+</header>
+
+<div class="prog-wrap" id="prog-wrap">
+  <div class="prog-bar">
+    <div class="p-seg cur" id="ps1"></div>
+    <div class="p-seg" id="ps2"></div>
+    <div class="p-seg" id="ps3"></div>
+    <div class="p-seg" id="ps4"></div>
+  </div>
+  <div class="prog-label" id="prog-label">Paso 1 de 4 — Reserva Airbnb</div>
+</div>
+
+<main>
+
+  <!-- API SETUP -->
+  <div class="setup-banner" id="api-banner">
+    <h3>⚙ Configuración inicial</h3>
+    <p>Introduce tu API key de Anthropic para activar la IA. Se guarda en este dispositivo y no se envía a ningún servidor.</p>
+    <div class="field">
+      <label>API Key de Anthropic</label>
+      <input type="password" id="api-key-inp" placeholder="sk-ant-api03-...">
+    </div>
+    <button class="btn btn-gold" style="margin-top:10px" onclick="saveKey()">Guardar y continuar</button>
+  </div>
+
+  <!-- ═══ PASO 1: AIRBNB EMAIL ═══ -->
+  <div class="step active" id="step-1">
+    <div class="eyebrow">Paso 1 de 4</div>
+    <div class="title">Datos de la reserva</div>
+    <div class="subtitle">Pega el email de confirmación de Airbnb. Extraeremos todos los datos automáticamente.</div>
+
+    <div class="err" id="err-1"></div>
+
+    <div class="card">
+      <div class="card-label">Email de confirmación de Airbnb</div>
+      <div class="field">
+        <textarea id="airbnb-email" placeholder="Pega aquí el texto del email de confirmación de Airbnb...&#10;&#10;Ejemplo:&#10;¡Felicidades! Tu reserva está confirmada.&#10;Código de confirmación: HMXXXXXXXX&#10;Huésped: María García&#10;Check-in: 15 abr 2026..."></textarea>
+      </div>
+      <button class="btn btn-gold" onclick="extractAirbnb()" style="margin-top:4px">Extraer datos con IA →</button>
+    </div>
+
+    <div class="airbnb-result" id="airbnb-result">
+      <div class="card-label" style="margin-bottom:8px">✓ Datos extraídos</div>
+      <div class="airbnb-row"><span>Código reserva</span><span id="ar-codigo">—</span></div>
+      <div class="airbnb-row"><span>Huésped</span><span id="ar-huesped">—</span></div>
+      <div class="airbnb-row"><span>Check-in</span><span id="ar-entrada">—</span></div>
+      <div class="airbnb-row"><span>Check-out</span><span id="ar-salida">—</span></div>
+      <div class="airbnb-row"><span>Huéspedes</span><span id="ar-num">—</span></div>
+      <div class="airbnb-row"><span>Teléfono</span><span id="ar-tel">—</span></div>
+    </div>
+
+    <div style="margin-top:10px">
+      <button class="btn btn-gold" id="btn-next-1" onclick="goStep(2)" disabled>Continuar →</button>
+      <button class="btn btn-out" onclick="skipAirbnb()">Saltar, introducir manualmente</button>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 2: FOTO DNI ═══ -->
+  <div class="step" id="step-2">
+    <div class="eyebrow">Paso 2 de 4</div>
+    <div class="title">Foto del documento</div>
+    <div class="subtitle">Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.</div>
+
+    <div class="err" id="err-2"></div>
+    <div class="info">🔒 Tus datos se usan exclusivamente para el registro legal obligatorio (RD 933/2021). No se almacenan en ningún servidor.</div>
+
+    <!-- Camera mode -->
+    <div id="cam-section">
+      <div class="cam-wrap" id="cam-wrap" style="display:none">
+        <video id="vid" autoplay playsinline muted></video>
+        <canvas id="snap-canvas"></canvas>
+        <div class="cam-overlay">
+          <div class="doc-frame"></div>
+          <div class="cam-tip">Centra el documento dentro del marco</div>
+        </div>
+        <div class="corner c-tl"></div>
+        <div class="corner c-tr"></div>
+        <div class="corner c-bl"></div>
+        <div class="corner c-br"></div>
+      </div>
+
+      <div class="preview-box">
+        <img id="preview-img" alt="Documento capturado">
+        <button class="retake-btn" id="retake-btn" onclick="retake()" style="display:none">↺ Repetir</button>
+      </div>
+
+      <div class="cam-btns" id="cam-btns">
+        <button class="btn btn-dark" onclick="startCamera()">📷 Abrir cámara</button>
+        <div class="upload-zone" style="flex:1;padding:15px;margin-bottom:0" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+          <input type="file" accept="image/*" onchange="handleFile(this.files[0])">
+          <div style="font-size:13px;color:var(--text2)">⬆ Subir foto</div>
+        </div>
+      </div>
+
+      <div id="shutter-btn" style="display:none">
+        <button class="btn btn-gold" onclick="takePicture()">📸 Hacer foto</button>
+        <button class="btn btn-out" onclick="stopCamera()">Cancelar</button>
+      </div>
+    </div>
+
+    <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:12px">Leer documento con IA →</button>
+    <button class="btn btn-out" onclick="goStep(3)">Saltar, introducir manualmente</button>
+    <button class="btn btn-out" style="margin-top:4px" onclick="goStep(1)">← Volver</button>
+  </div>
+
+  <!-- ═══ PASO 3: DATOS ═══ -->
+  <div class="step" id="step-3">
+    <div class="eyebrow">Paso 3 de 4</div>
+    <div class="title">Revisa los datos</div>
+    <div class="subtitle">Comprueba que todo está correcto. Los campos en verde se han rellenado automáticamente.</div>
+
+    <div class="err" id="err-3"></div>
+
+    <!-- Datos documento -->
+    <div class="card">
+      <div class="card-label">Documento de identidad <span class="ai-badge" id="doc-ai-badge" style="display:none">IA</span></div>
+      <div class="form-grid">
+        <div class="row2">
+          <div class="field">
+            <label>Tipo documento</label>
+            <select id="f-tipo">
+              <option value="D">DNI / NIF</option>
+              <option value="P">Pasaporte</option>
+              <option value="N">NIE</option>
+              <option value="O">Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Número</label>
+            <input type="text" id="f-numdoc" placeholder="12345678A">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Primer apellido</label>
+            <input type="text" id="f-ap1" placeholder="García">
+          </div>
+          <div class="field">
+            <label>Segundo apellido</label>
+            <input type="text" id="f-ap2" placeholder="López">
+          </div>
+        </div>
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" id="f-nom" placeholder="María">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Sexo</label>
+            <select id="f-sexe">
+              <option value="">— Selecciona —</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+              <option value="O">Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Fecha nacimiento</label>
+            <input type="date" id="f-naix">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Nacionalidad (ISO-3)</label>
+            <input type="text" id="f-nac" placeholder="ESP" maxlength="3">
+          </div>
+          <div class="field">
+            <label>Nº soporte (DNI/NIE)</label>
+            <input type="text" id="f-suport" placeholder="AAA123456" maxlength="9">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos estancia -->
+    <div class="card">
+      <div class="card-label">Estancia <span class="ai-badge" id="stay-ai-badge" style="display:none">Airbnb</span></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nº reserva Airbnb</label>
+          <input type="text" id="f-reserva" placeholder="HMXXXXXXXX">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Fecha entrada</label>
+            <input type="date" id="f-entrada">
+          </div>
+          <div class="field">
+            <label>Hora entrada</label>
+            <input type="time" id="f-hora-in" value="15:00">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Fecha salida</label>
+            <input type="date" id="f-salida">
+          </div>
+          <div class="field">
+            <label>Hora salida</label>
+            <input type="time" id="f-hora-out" value="11:00">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Total huéspedes</label>
+            <input type="number" id="f-nviat" value="1" min="1" max="20">
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <input type="tel" id="f-tel" placeholder="+34 600 000 000">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="f-email" placeholder="correo@ejemplo.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- Dirección postal -->
+    <div class="card">
+      <div class="card-label">Dirección postal del huésped</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Calle y número</label>
+          <input type="text" id="f-adreca" placeholder="Calle Mayor, 1">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>País (ISO-3)</label>
+            <input type="text" id="f-pais" placeholder="ESP" maxlength="3" value="ESP">
+          </div>
+          <div class="field">
+            <label>Código postal</label>
+            <input type="text" id="f-cp" placeholder="08001">
+          </div>
+        </div>
+        <div class="row2" id="row-esp">
+          <div class="field">
+            <label>Prov. INE (ej: 08)</label>
+            <input type="text" id="f-prov" placeholder="08" maxlength="2">
+          </div>
+          <div class="field">
+            <label>Mun. INE (ej: 080193)</label>
+            <input type="text" id="f-mun" placeholder="080193" maxlength="6">
+          </div>
+        </div>
+        <div class="field" id="row-ext" style="display:none">
+          <label>Localidad</label>
+          <input type="text" id="f-loc" placeholder="Paris">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-gold" onclick="generateFile()">Generar fichero Mossos →</button>
+    <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
+  </div>
+
+  <!-- ═══ PASO 4: ÉXITO ═══ -->
+  <div class="step" id="step-4">
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <div class="title">¡Listo!</div>
+      <div class="subtitle">Fichero generado correctamente para los Mossos d'Esquadra.</div>
+    </div>
+
+    <button class="download-card" id="btn-dl" onclick="doDownload()">
+      <span class="d-icon">⬇</span>
+      <span>
+        Descargar fichero
+        <span class="d-sub" id="dl-fname">ID50044239.001.txt</span>
+      </span>
+    </button>
+
+    <div class="mossos-steps" style="margin-top:24px">
+      <h4>Sube el fichero a Mossos (30 seg)</h4>
+      <div class="m-step">
+        <div class="m-num">1</div>
+        <span>Ve a <a href="https://mossos.gencat.cat" target="_blank">mossos.gencat.cat</a> → Serveis i tràmits → Registre de viatgers</span>
+      </div>
+      <div class="m-step">
+        <div class="m-num">2</div>
+        <span>Entra con tu usuario y contraseña</span>
+      </div>
+      <div class="m-step">
+        <div class="m-num">3</div>
+        <span>Menú: <strong>Enviament informació viatgers → Fitxers massius de viatgers</strong></span>
+      </div>
+      <div class="m-step">
+        <div class="m-num">4</div>
+        <span>Pulsa <strong>Tria un fitxer</strong>, selecciona el fichero descargado y haz clic en <strong>Acceptar</strong></span>
+      </div>
+    </div>
+
+    <button class="btn btn-out" onclick="resetAll()" style="margin-top:24px">+ Registrar otro huésped</button>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const ESTAB = { id: 'ID50044239', nom: "ANIKA'S HOUSE" };
+let fileCounter = parseInt(localStorage.getItem('mc') || '0');
+let fileContent = '';
+let capturedImage = null; // base64
+let capturedMime = 'image/jpeg';
+let stream = null;
+let airbnbData = {};
+let dniData = {};
+
+// ═══════════════════════════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════════════════════════
+function getKey() { return localStorage.getItem('ak') || ''; }
+function saveKey() {
+  const k = document.getElementById('api-key-inp').value.trim();
+  if (!k.startsWith('sk-ant-')) { alert('La key debe empezar con sk-ant-'); return; }
+  localStorage.setItem('ak', k);
+  document.getElementById('api-banner').style.display = 'none';
+}
+function initKey() {
+  if (getKey()) document.getElementById('api-banner').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const stepLabels = ['','Reserva Airbnb','Foto del documento','Revisa los datos','¡Completado!'];
+function goStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  for (let i=1;i<=4;i++) {
+    const el = document.getElementById('ps'+i);
+    el.className = 'p-seg' + (i<n?' done':i===n?' cur':'');
+  }
+  document.getElementById('prog-label').textContent = `Paso ${n} de 4 — ${stepLabels[n]}`;
+  if (n===4) document.getElementById('prog-wrap').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 1 — AIRBNB EMAIL EXTRACTION
+// ═══════════════════════════════════════════════════════════
+async function extractAirbnb() {
+  const text = document.getElementById('airbnb-email').value.trim();
+  if (!text) { showErr('err-1','Por favor pega el email de Airbnb.'); return; }
+  if (!getKey()) { showErr('err-1','Guarda tu API key primero.'); document.getElementById('api-banner').scrollIntoView(); return; }
+
+  hideErr('err-1');
+  const btn = event.target;
+  btn.textContent = 'Extrayendo...';
+  btn.disabled = true;
+
+  try {
+    const res = await callClaude([{
+      role:'user',
+      content: `Analiza este email de confirmación de Airbnb y extrae los datos.
+Responde SOLO con JSON válido sin markdown:
+{
+  "codigo": "código de confirmación (HMXXXXXXXX o similar)",
+  "huesped": "nombre completo del huésped principal",
+  "entrada": "fecha check-in formato YYYY-MM-DD",
+  "salida": "fecha check-out formato YYYY-MM-DD",
+  "num_huespedes": "número total de huéspedes como string",
+  "telefono": "teléfono si aparece, si no vacío",
+  "email": "email del huésped si aparece, si no vacío",
+  "hora_entrada": "hora check-in en formato HHmm si aparece, si no 1500",
+  "hora_salida": "hora check-out en formato HHmm si aparece, si no 1100"
+}
+
+EMAIL:
+${text}`
+    }]);
+
+    airbnbData = JSON.parse(res.replace(/```json|```/g,'').trim());
+
+    // Show result card
+    const r = document.getElementById('airbnb-result');
+    r.style.display = 'block';
+    document.getElementById('ar-codigo').textContent = airbnbData.codigo || '—';
+    document.getElementById('ar-huesped').textContent = airbnbData.huesped || '—';
+    document.getElementById('ar-entrada').textContent = airbnbData.entrada || '—';
+    document.getElementById('ar-salida').textContent = airbnbData.salida || '—';
+    document.getElementById('ar-num').textContent = airbnbData.num_huespedes || '—';
+    document.getElementById('ar-tel').textContent = airbnbData.telefono || '—';
+
+    document.getElementById('btn-next-1').disabled = false;
+    btn.textContent = '✓ Datos extraídos · Continuar →';
+
+  } catch(e) {
+    showErr('err-1', 'Error: ' + e.message);
+    btn.textContent = 'Extraer datos con IA →';
+    btn.disabled = false;
+  }
+}
+
+function skipAirbnb() {
+  airbnbData = {};
+  goStep(2);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 2 — CAMERA
+// ═══════════════════════════════════════════════════════════
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width:{ideal:1920}, height:{ideal:1080} }
+    });
+    const vid = document.getElementById('vid');
+    vid.srcObject = stream;
+    document.getElementById('cam-wrap').style.display = 'block';
+    document.getElementById('cam-btns').style.display = 'none';
+    document.getElementById('shutter-btn').style.display = 'block';
+  } catch(e) {
+    showErr('err-2', 'No se pudo acceder a la cámara. Puedes subir una foto directamente.');
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  document.getElementById('cam-wrap').style.display = 'none';
+  document.getElementById('cam-btns').style.display = 'flex';
+  document.getElementById('shutter-btn').style.display = 'none';
+}
+
+function takePicture() {
+  const vid = document.getElementById('vid');
+  const canvas = document.getElementById('snap-canvas');
+  canvas.width = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+  capturedImage = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+  capturedMime = 'image/jpeg';
+
+  const img = document.getElementById('preview-img');
+  img.src = 'data:image/jpeg;base64,' + capturedImage;
+  img.style.display = 'block';
+  document.getElementById('retake-btn').style.display = 'block';
+  document.getElementById('btn-extract-dni').disabled = false;
+  stopCamera();
+}
+
+function retake() {
+  capturedImage = null;
+  document.getElementById('preview-img').style.display = 'none';
+  document.getElementById('retake-btn').style.display = 'none';
+  document.getElementById('btn-extract-dni').disabled = true;
+  document.getElementById('cam-btns').style.display = 'flex';
+}
+
+function handleFile(file) {
+  if (!file) return;
+  capturedMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    capturedImage = e.target.result.split(',')[1];
+    const img = document.getElementById('preview-img');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('retake-btn').style.display = 'block';
+    document.getElementById('btn-extract-dni').disabled = false;
+    document.getElementById('cam-btns').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 2 — DNI OCR
+// ═══════════════════════════════════════════════════════════
+async function extractDNI() {
+  if (!capturedImage) { showErr('err-2','Primero haz o sube una foto del documento.'); return; }
+  if (!getKey()) { showErr('err-2','Guarda tu API key primero.'); return; }
+
+  hideErr('err-2');
+  const btn = document.getElementById('btn-extract-dni');
+  btn.textContent = 'Leyendo documento...';
+  btn.disabled = true;
+
+  try {
+    const res = await callClaudeVision(capturedImage, capturedMime,
+`Analiza este documento de identidad y extrae todos los datos visibles.
+Responde SOLO con JSON válido sin markdown:
+{
+  "tipus_doc": "D para DNI/NIF español, P para Pasaporte, N para NIE, O para otros",
+  "num_doc": "número del documento sin espacios en mayúsculas",
+  "num_suport": "número de soporte si es DNI español exactamente 9 caracteres, si no vacío",
+  "primer_cognom": "primer apellido en mayúsculas",
+  "segon_cognom": "segundo apellido en mayúsculas o vacío si no tiene",
+  "nom": "nombre en mayúsculas",
+  "sexe": "M o F",
+  "data_naix": "fecha nacimiento YYYYMMDD",
+  "data_exp": "fecha expedición YYYYMMDD o vacío",
+  "pais": "código ISO-3 del país de nacionalidad ESP FRA GBR DEU ITA USA RUS etc"
+}`);
+
+    dniData = JSON.parse(res.replace(/```json|```/g,'').trim());
+    fillStep3();
+    goStep(3);
+
+  } catch(e) {
+    showErr('err-2', 'No se pudo leer el documento: ' + e.message + '. Puedes introducir los datos manualmente.');
+    btn.textContent = 'Leer documento con IA →';
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 3 — FILL FORM
+// ═══════════════════════════════════════════════════════════
+function fillStep3() {
+  // DNI data
+  if (Object.keys(dniData).length > 0) {
+    setAI('f-tipo', dniData.tipus_doc);
+    setAI('f-numdoc', dniData.num_doc);
+    setAI('f-ap1', dniData.primer_cognom);
+    setAI('f-ap2', dniData.segon_cognom);
+    setAI('f-nom', dniData.nom);
+    setAI('f-sexe', dniData.sexe);
+    setAI('f-nac', dniData.pais);
+    setAI('f-suport', dniData.num_suport);
+    if (dniData.data_naix && dniData.data_naix.length===8) {
+      setAI('f-naix', dniData.data_naix.slice(0,4)+'-'+dniData.data_naix.slice(4,6)+'-'+dniData.data_naix.slice(6,8));
+    }
+    document.getElementById('doc-ai-badge').style.display = 'inline-block';
+  }
+
+  // Airbnb data
+  if (Object.keys(airbnbData).length > 0) {
+    setAI('f-reserva', airbnbData.codigo);
+    setAI('f-entrada', airbnbData.entrada);
+    setAI('f-salida', airbnbData.salida);
+    setAI('f-nviat', airbnbData.num_huespedes);
+    setAI('f-tel', airbnbData.telefono);
+    setAI('f-email', airbnbData.email);
+    if (airbnbData.hora_entrada) setVal('f-hora-in', airbnbData.hora_entrada.slice(0,2)+':'+airbnbData.hora_entrada.slice(2,4));
+    if (airbnbData.hora_salida) setVal('f-hora-out', airbnbData.hora_salida.slice(0,2)+':'+airbnbData.hora_salida.slice(2,4));
+    document.getElementById('stay-ai-badge').style.display = 'inline-block';
+  }
+
+  // Country logic
+  document.getElementById('f-pais').addEventListener('input', function() {
+    const esp = this.value.toUpperCase() === 'ESP';
+    document.getElementById('row-esp').style.display = esp ? 'grid' : 'none';
+    document.getElementById('row-ext').style.display = esp ? 'none' : 'block';
+  });
+}
+
+function setAI(id, val) {
+  if (!val) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = val;
+  el.classList.add('ai');
+}
+function setVal(id, val) {
+  if (!val) return;
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 4 — GENERATE FILE
+// ═══════════════════════════════════════════════════════════
+function generateFile() {
+  hideErr('err-3');
+
+  const numdoc = v('f-numdoc');
+  const ap1 = v('f-ap1');
+  const nom = v('f-nom');
+  const entrada = v('f-entrada');
+  const salida = v('f-salida');
+  const reserva = v('f-reserva');
+
+  if (!numdoc||!ap1||!nom) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return; }
+  if (!entrada||!salida||!reserva) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return; }
+  if (new Date(salida) <= new Date(entrada)) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return; }
+
+  const now = new Date();
+  const fconf = fmtDate(now);
+  const hconf = fmtTime(now);
+
+  const tipo = v('f-tipo') || 'D';
+  const docE = tipo==='D' ? numdoc.toUpperCase() : '';
+  const docX = tipo!=='D' ? numdoc.toUpperCase() : '';
+
+  const naix = v('f-naix').replace(/-/g,'');
+  const entFmt = entrada.replace(/-/g,'');
+  const salFmt = salida.replace(/-/g,'');
+  const hIn = (v('f-hora-in')||'15:00').replace(':','');
+  const hOut = (v('f-hora-out')||'11:00').replace(':','');
+  const pais = (v('f-pais')||'ESP').toUpperCase();
+
+  const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, hconf, '1', 'V24'].join('|');
+
+  const campos = [
+    '2', docE, docX, tipo,
+    dniData.data_exp || '',
+    (v('f-ap1')||'').toUpperCase(),
+    (v('f-ap2')||'').toUpperCase(),
+    (v('f-nom')||'').toUpperCase(),
+    v('f-sexe')||'',
+    naix,
+    (v('f-nac')||'ESP').toUpperCase(),
+    entFmt, hIn, salFmt, hOut,
+    entFmt, 'C',
+    reserva.toUpperCase(),
+    v('f-nviat')||'1',
+    '1', 'N', 'PLATF',
+    v('f-tel')||'',
+    '',
+    v('f-email')||'',
+    (v('f-suport')||'').toUpperCase(),
+    v('f-adreca')||'',
+    pais==='ESP' ? (v('f-prov')||'') : '',
+    pais==='ESP' ? (v('f-mun')||'') : '',
+    pais!=='ESP' ? (v('f-loc')||'') : '',
+    pais,
+    v('f-cp')||''
+  ];
+
+  fileContent = linEstab + '\r\n' + campos.join('|');
+
+  fileCounter++;
+  localStorage.setItem('mc', fileCounter);
+  const seq = String(fileCounter % 999 || 999).padStart(3,'0');
+  const fname = `${ESTAB.id}.${seq}.txt`;
+  document.getElementById('dl-fname').textContent = fname;
+  document.getElementById('btn-dl').dataset.fname = fname;
+
+  goStep(4);
+}
+
+function doDownload() {
+  const fname = document.getElementById('btn-dl').dataset.fname;
+  const blob = new Blob([fileContent], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLAUDE API CALLS
+// ═══════════════════════════════════════════════════════════
+async function callClaude(messages) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': getKey(),
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages })
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.content[0].text;
+}
+
+async function callClaudeVision(b64, mime, prompt) {
+  return callClaude([{
+    role:'user',
+    content:[
+      { type:'image', source:{ type:'base64', media_type:mime, data:b64 } },
+      { type:'text', text:prompt }
+    ]
+  }]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function v(id) { return (document.getElementById(id)?.value||'').trim(); }
+function showErr(id, msg) { const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; }
+function hideErr(id) { document.getElementById(id).style.display='none'; }
+function fmtDate(d) { return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); }
+function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0'); }
+
+function resetAll() {
+  dniData={}; airbnbData={}; capturedImage=null; fileContent='';
+  document.getElementById('airbnb-email').value='';
+  document.getElementById('airbnb-result').style.display='none';
+  document.getElementById('btn-next-1').disabled=true;
+  document.getElementById('preview-img').style.display='none';
+  document.getElementById('retake-btn').style.display='none';
+  document.getElementById('btn-extract-dni').disabled=true;
+  document.getElementById('cam-btns').style.display='flex';
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(el.id==='api-key-inp'||el.id==='f-nviat'||el.id==='f-hora-in'||el.id==='f-hora-out'||el.id==='f-pais') return;
+    if(el.type!=='button') el.value='';
+    el.classList.remove('ai');
+  });
+  document.getElementById('f-nviat').value='1';
+  document.getElementById('f-hora-in').value='15:00';
+  document.getElementById('f-hora-out').value='11:00';
+  document.getElementById('f-pais').value='ESP';
+  document.getElementById('prog-wrap').style.display='block';
+  document.getElementById('doc-ai-badge').style.display='none';
+  document.getElementById('stay-ai-badge').style.display='none';
+  goStep(1);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+initKey();
+</script>
+</body>
+</html>
