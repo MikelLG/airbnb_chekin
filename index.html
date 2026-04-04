@@ -6,7 +6,6 @@
 <title>Check-in · Anika's House</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  
 :root {
   --bg: #0F0D0B;
   --bg2: #1A1612;
@@ -508,13 +507,28 @@ function goStep(n) {
 // STEP 1 — iCAL LOADER
 // ═══════════════════════════════════════════════════════════
 const ICAL_URL = '__ICAL_URL__';
-const ICAL_PROXY = 'https://api.allorigins.win/get?url=';
+// Multiple proxies to try in order
+const ICAL_PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+  'https://cors-anywhere.herokuapp.com/'
+];
 
 async function loadIcal() {
   try {
-    const res = await fetch(ICAL_PROXY + encodeURIComponent(ICAL_URL));
-    const data = await res.json();
-    const reservations = parseIcal(data.contents);
+    let text = null;
+    let lastErr = null;
+    for (const proxy of ICAL_PROXIES) {
+      try {
+        const res = await fetch(proxy + encodeURIComponent(ICAL_URL));
+        if (!res.ok) continue;
+        text = await res.text();
+        if (text && text.includes('BEGIN:VCALENDAR')) break;
+        text = null;
+      } catch(e) { lastErr = e; continue; }
+    }
+    if (!text) throw lastErr || new Error('All proxies failed');
+    const reservations = parseIcal(text);
 
     document.getElementById('ical-loading').style.display = 'none';
 
