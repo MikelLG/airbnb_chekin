@@ -846,6 +846,12 @@ function generateFile() {
 
   const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, hconf, '1', 'V24'].join('|');
 
+  // Clean phone: remove spaces, +, dashes — only digits, max 20
+  const telClean = (v('f-tel')||'').replace(/[^0-9]/g, '').slice(0, 20);
+
+  // Contract date must be today or earlier (not future)
+  const contractDate = entFmt <= fmtDate(now) ? entFmt : fmtDate(now);
+
   const campos = [
     '2', docE, docX, tipo,
     dniData.data_exp || '',
