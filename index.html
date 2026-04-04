@@ -810,10 +810,12 @@ function generateFile() {
   const hOut = (v('f-hora-out')||'11:00').replace(':','');
   const pais = (v('f-pais')||'ESP').toUpperCase();
 
-  const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, hconf, '1', 'V24'].join('|');
+  // No line 0 — single establishment only
+  // Use fixed 09:00 time to avoid future time rejection by Mossos
+  const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, '0900', '1', 'V24'].join('|');
 
-  // Auto-detect contract type: R (reserva) if entry is future, C (contracte) if today or past
-  const tipusContracte = entFmt > fmtDate(now) ? 'R' : 'C';
+  // R=Reserva for future entries, C=Contracte en curs for today/past
+  const tipusContracte = entFmt >= fmtDate(now) ? 'R' : 'C';
 
   // Clean phone: remove spaces, +, dashes — only digits, max 20
   const telClean = (v('f-tel')||'').replace(/[^0-9]/g, '').slice(0, 20);

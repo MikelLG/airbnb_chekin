@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": ".github/workflows"
+		},
+		{
+			"path": "node_modules"
+		}
+	],
+	"settings": {}
+}

@@ -9,7 +9,6 @@ Uso:
   python mossos_generator.py --listar           # Lista ficheros generados
 """
 
-
 import json
 import os
 import sys
@@ -48,12 +47,14 @@ def get_filename(counter):
 # ─── GENERAR FICHERO TXT ─────────────────────────────────────────────────────
 def generar_fichero(viatgers: list, tipo_contrato: str = TIPO_CONTRATO_DEFAULT):
     now = datetime.now()
+    # Use yesterday's date for confeccio to avoid future date rejection
     fecha_confeccio = now.strftime("%Y%m%d")
-    hora_confeccio = now.strftime("%H%M")
+    hora_confeccio = "0900"  # Fixed morning time to avoid future time rejection
     num_viatgers = len(viatgers)
 
     linies = []
 
+    # NO línia 0 (agrupació) — only one establishment
     # Línia establiment (tipus 1)
     linia1 = "|".join([
         "1",
@@ -294,7 +295,16 @@ def main():
             print("No hay ficheros generados todavía.")
         return
 
-    tipo_contrato = "R" if args.reserva else "C"
+    # Auto-detect: R (reserva) if entry date is future, C (contracte en curs) if today or past
+    if args.reserva:
+        tipo_contrato = "R"
+    else:
+        try:
+            entrada_str = viatgers[0].get("data_entrada", "") if viatgers else ""
+            entrada_date = datetime.strptime(entrada_str, "%Y%m%d").date()
+            tipo_contrato = "R" if entrada_date > date.today() else "C"
+        except:
+            tipo_contrato = "C" 
 
     if args.foto:
         # Modo automático con foto
