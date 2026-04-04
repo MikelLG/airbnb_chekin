@@ -25,28 +25,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject API key
+      - name: Inject secrets into HTML
         env:
           API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ICAL_URL: ${{ secrets.AIRBNB_ICAL_URL }}
         run: |
           python3 -c "
           import os
-          key = os.environ['API_KEY']
+          api_key = os.environ['API_KEY']
+          ical_url = os.environ['ICAL_URL']
           with open('index.html', 'r') as f:
               content = f.read()
-          content = content.replace('__ANTHROPIC_API_KEY__', key)
+          content = content.replace('__ANTHROPIC_API_KEY__', api_key)
+          content = content.replace('__ICAL_URL__', ical_url)
           with open('index.html', 'w') as f:
               f.write(content)
-          print('Key injected successfully')
+          print('Secrets injected OK')
           "
 
       - name: Verify injection
         run: |
-          if grep -q '__ANTHROPIC_API_KEY__' index.html; then
-            echo "ERROR: placeholder still present!"
+          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__' index.html; then
+            echo "ERROR: placeholders still present!"
             exit 1
           else
-            echo "OK: key injected correctly"
+            echo "OK: all secrets injected"
           fi
 
       - name: Setup Pages

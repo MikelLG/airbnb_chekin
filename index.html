@@ -189,35 +189,37 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
     <button class="btn btn-gold" style="margin-top:10px" onclick="saveKey()">Guardar y continuar</button>
   </div>
 
-  <!-- ═══ PASO 1: AIRBNB EMAIL ═══ -->
+  <!-- ═══ PASO 1: AIRBNB iCAL ═══ -->
   <div class="step active" id="step-1">
     <div class="eyebrow">Paso 1 de 4</div>
-    <div class="title">Datos de la reserva</div>
-    <div class="subtitle">Pega el email de confirmación de Airbnb. Extraeremos todos los datos automáticamente.</div>
+    <div class="title">Tu reserva</div>
+    <div class="subtitle">Selecciona tu reserva de Airbnb.</div>
 
     <div class="err" id="err-1"></div>
 
-    <div class="card">
-      <div class="card-label">Email de confirmación de Airbnb</div>
-      <div class="field">
-        <textarea id="airbnb-email" placeholder="Pega aquí el texto del email de confirmación de Airbnb...&#10;&#10;Ejemplo:&#10;¡Felicidades! Tu reserva está confirmada.&#10;Código de confirmación: HMXXXXXXXX&#10;Huésped: María García&#10;Check-in: 15 abr 2026..."></textarea>
+    <div class="card" id="ical-loading">
+      <div style="text-align:center;padding:20px 0">
+        <div class="spinner"></div>
+        <div class="extract-status">Cargando reservas de Airbnb...</div>
       </div>
-      <button class="btn btn-gold" onclick="extractAirbnb()" style="margin-top:4px">Extraer datos con IA →</button>
+    </div>
+
+    <div id="ical-list" style="display:none">
+      <div class="card-label" style="margin-bottom:10px">Selecciona tu reserva</div>
+      <div id="reservations-list"></div>
+      <button class="btn btn-out" onclick="skipAirbnb()" style="margin-top:8px">Introducir manualmente</button>
     </div>
 
     <div class="airbnb-result" id="airbnb-result">
-      <div class="card-label" style="margin-bottom:8px">✓ Datos extraídos</div>
+      <div class="card-label" style="margin-bottom:8px">Reserva seleccionada</div>
       <div class="airbnb-row"><span>Código reserva</span><span id="ar-codigo">—</span></div>
-      <div class="airbnb-row"><span>Huésped</span><span id="ar-huesped">—</span></div>
       <div class="airbnb-row"><span>Check-in</span><span id="ar-entrada">—</span></div>
       <div class="airbnb-row"><span>Check-out</span><span id="ar-salida">—</span></div>
       <div class="airbnb-row"><span>Huéspedes</span><span id="ar-num">—</span></div>
-      <div class="airbnb-row"><span>Teléfono</span><span id="ar-tel">—</span></div>
     </div>
 
     <div style="margin-top:10px">
       <button class="btn btn-gold" id="btn-next-1" onclick="goStep(2)" disabled>Continuar →</button>
-      <button class="btn btn-out" onclick="skipAirbnb()">Saltar, introducir manualmente</button>
     </div>
   </div>
 
@@ -502,59 +504,125 @@ function goStep(n) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 1 — AIRBNB EMAIL EXTRACTION
+// STEP 1 — iCAL LOADER
 // ═══════════════════════════════════════════════════════════
-async function extractAirbnb() {
-  const text = document.getElementById('airbnb-email').value.trim();
-  if (!text) { showErr('err-1','Por favor pega el email de Airbnb.'); return; }
-  if (!getKey()) { showErr('err-1','Guarda tu API key primero.'); document.getElementById('api-banner').scrollIntoView(); return; }
+const ICAL_URL = '__ICAL_URL__';
+const ICAL_PROXY = 'https://api.allorigins.win/get?url=';
 
-  hideErr('err-1');
-  const btn = event.target;
-  btn.textContent = 'Extrayendo...';
-  btn.disabled = true;
-
+async function loadIcal() {
   try {
-    const res = await callClaude([{
-      role:'user',
-      content: `Analiza este email de confirmación de Airbnb y extrae los datos.
-Responde SOLO con JSON válido sin markdown:
-{
-  "codigo": "código de confirmación (HMXXXXXXXX o similar)",
-  "huesped": "nombre completo del huésped principal",
-  "entrada": "fecha check-in formato YYYY-MM-DD",
-  "salida": "fecha check-out formato YYYY-MM-DD",
-  "num_huespedes": "número total de huéspedes como string",
-  "telefono": "teléfono si aparece, si no vacío",
-  "email": "email del huésped si aparece, si no vacío",
-  "hora_entrada": "hora check-in en formato HHmm si aparece, si no 1500",
-  "hora_salida": "hora check-out en formato HHmm si aparece, si no 1100"
+    const res = await fetch(ICAL_PROXY + encodeURIComponent(ICAL_URL));
+    const data = await res.json();
+    const reservations = parseIcal(data.contents);
+
+    document.getElementById('ical-loading').style.display = 'none';
+
+    if (reservations.length === 0) {
+      showErr('err-1', 'No se encontraron reservas próximas. Puedes introducir los datos manualmente.');
+      document.getElementById('ical-list').style.display = 'block';
+      return;
+    }
+
+    const list = document.getElementById('reservations-list');
+    list.innerHTML = '';
+    reservations.forEach((r, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.cssText = 'cursor:pointer;margin-bottom:10px;border:1.5px solid var(--border);transition:border-color .2s';
+      card.onmouseenter = () => card.style.borderColor = 'var(--gold)';
+      card.onmouseleave = () => card.style.borderColor = 'var(--border)';
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--gold);font-weight:500">${r.codigo || 'Reserva ' + (i+1)}</span>
+          <span style="font-size:11px;color:var(--text3)">${r.num_huespedes} huésped${r.num_huespedes>1?'es':''}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text2)">
+          Check-in: <span style="color:var(--text)">${r.entrada}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px">
+          Check-out: <span style="color:var(--text)">${r.salida}</span>
+        </div>
+      `;
+      card.onclick = () => selectReservation(r);
+      list.appendChild(card);
+    });
+
+    document.getElementById('ical-list').style.display = 'block';
+  } catch(e) {
+    document.getElementById('ical-loading').style.display = 'none';
+    showErr('err-1', 'No se pudo cargar el calendario. Introduce los datos manualmente.');
+    document.getElementById('ical-list').style.display = 'block';
+  }
 }
 
-EMAIL:
-${text}`
-    }]);
+function parseIcal(text) {
+  const events = [];
+  const blocks = text.split('BEGIN:VEVENT');
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-    airbnbData = JSON.parse(res.replace(/```json|```/g,'').trim());
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i];
+    const get = (key) => {
+      const m = block.match(new RegExp(key + '[^:]*:([^\r\n]+)'));
+      return m ? m[1].trim() : '';
+    };
 
-    // Show result card
-    const r = document.getElementById('airbnb-result');
-    r.style.display = 'block';
-    document.getElementById('ar-codigo').textContent = airbnbData.codigo || '—';
-    document.getElementById('ar-huesped').textContent = airbnbData.huesped || '—';
-    document.getElementById('ar-entrada').textContent = airbnbData.entrada || '—';
-    document.getElementById('ar-salida').textContent = airbnbData.salida || '—';
-    document.getElementById('ar-num').textContent = airbnbData.num_huespedes || '—';
-    document.getElementById('ar-tel').textContent = airbnbData.telefono || '—';
+    const dtstart = get('DTSTART');
+    const dtend = get('DTEND');
+    const summary = get('SUMMARY');
+    const uid = get('UID');
 
-    document.getElementById('btn-next-1').disabled = false;
-    btn.textContent = '✓ Datos extraídos · Continuar →';
+    if (!dtstart || !dtend) continue;
 
-  } catch(e) {
-    showErr('err-1', 'Error: ' + e.message);
-    btn.textContent = 'Extraer datos con IA →';
-    btn.disabled = false;
+    // Parse date YYYYMMDD
+    const parseD = (s) => {
+      const d = s.replace(/T.*/, '').replace(/-/g,'');
+      if (d.length !== 8) return null;
+      return new Date(d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8));
+    };
+
+    const start = parseD(dtstart);
+    const end = parseD(dtend);
+    if (!start || !end) continue;
+
+    // Only show upcoming or current reservations (not blocked dates)
+    if (end < today) continue;
+    if (summary.toLowerCase().includes('blocked') || summary.toLowerCase().includes('no disponible')) continue;
+
+    // Extract confirmation code from UID or summary
+    const codeMatch = (uid + summary).match(/HM[A-Z0-9]{6,10}/i);
+    const codigo = codeMatch ? codeMatch[0].toUpperCase() : uid.split('@')[0].slice(0,10).toUpperCase();
+
+    // Num guests from summary
+    const guestMatch = summary.match(/(\d+)\s*(guest|huésped|persona)/i);
+    const num_huespedes = guestMatch ? parseInt(guestMatch[1]) : 1;
+
+    events.push({
+      codigo,
+      entrada: start.toISOString().slice(0,10),
+      salida: end.toISOString().slice(0,10),
+      num_huespedes,
+      hora_entrada: '1500',
+      hora_salida: '1100'
+    });
   }
+
+  // Sort by check-in date
+  events.sort((a,b) => new Date(a.entrada) - new Date(b.entrada));
+  return events.slice(0, 10); // max 10
+}
+
+function selectReservation(r) {
+  airbnbData = r;
+  document.getElementById('airbnb-result').style.display = 'block';
+  document.getElementById('ar-codigo').textContent = r.codigo || '—';
+  document.getElementById('ar-entrada').textContent = r.entrada || '—';
+  document.getElementById('ar-salida').textContent = r.salida || '—';
+  document.getElementById('ar-num').textContent = r.num_huespedes || '1';
+  document.getElementById('btn-next-1').disabled = false;
+  document.getElementById('ical-list').style.display = 'none';
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function skipAirbnb() {
@@ -700,9 +768,9 @@ function fillStep3() {
     setAI('f-reserva', airbnbData.codigo);
     setAI('f-entrada', airbnbData.entrada);
     setAI('f-salida', airbnbData.salida);
-    setAI('f-nviat', airbnbData.num_huespedes);
-    setAI('f-tel', airbnbData.telefono);
-    setAI('f-email', airbnbData.email);
+    setAI('f-nviat', String(airbnbData.num_huespedes || '1'));
+    if (airbnbData.telefono) setAI('f-tel', airbnbData.telefono);
+    if (airbnbData.email) setAI('f-email', airbnbData.email);
     if (airbnbData.hora_entrada) setVal('f-hora-in', airbnbData.hora_entrada.slice(0,2)+':'+airbnbData.hora_entrada.slice(2,4));
     if (airbnbData.hora_salida) setVal('f-hora-out', airbnbData.hora_salida.slice(0,2)+':'+airbnbData.hora_salida.slice(2,4));
     document.getElementById('stay-ai-badge').style.display = 'inline-block';
@@ -876,6 +944,7 @@ function resetAll() {
 // INIT
 // ═══════════════════════════════════════════════════════════
 initKey();
+loadIcal();
 </script>
 </body>
 </html>
