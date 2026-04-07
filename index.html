@@ -590,6 +590,8 @@ async function loadIcal(icalUrl) {
 }
 
 function parseIcal(text) {
+  // Unfold iCal lines (lines continued with space/tab)
+  text = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
   const events = [];
   const blocks = text.split('BEGIN:VEVENT');
   const today = new Date();
