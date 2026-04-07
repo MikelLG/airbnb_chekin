@@ -29,15 +29,18 @@ jobs:
         env:
           API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ICAL_URL: ${{ secrets.AIRBNB_ICAL_URL }}
+          ICAL_URL_2: ${{ secrets.AIRBNB_ICAL_URL_2 }}
         run: |
           python3 -c "
           import os
           api_key = os.environ['API_KEY']
           ical_url = os.environ['ICAL_URL']
+          ical_url_2 = os.environ['ICAL_URL_2']
           with open('index.html', 'r') as f:
               content = f.read()
           content = content.replace('__ANTHROPIC_API_KEY__', api_key)
           content = content.replace('__ICAL_URL__', ical_url)
+          content = content.replace('__ICAL_URL_2__', ical_url_2)
           with open('index.html', 'w') as f:
               f.write(content)
           print('Secrets injected OK')
@@ -45,7 +48,7 @@ jobs:
 
       - name: Verify injection
         run: |
-          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__' index.html; then
+          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__\|__ICAL_URL_2__' index.html; then
             echo "ERROR: placeholders still present!"
             exit 1
           else

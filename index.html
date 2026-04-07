@@ -140,6 +140,15 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 .m-step a{color:var(--gold);text-decoration:none;}
 .m-step a:hover{text-decoration:underline;}
 
+/* ROOM SELECTOR */
+.room-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.room-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:16px 12px;cursor:pointer;text-align:center;transition:all .2s;}
+.room-card:hover{border-color:var(--gold);}
+.room-card.selected{border-color:var(--gold);background:var(--gold-dim);}
+.room-card .r-icon{font-size:22px;margin-bottom:6px;}
+.room-card .r-name{font-size:13px;font-weight:500;color:var(--text);}
+.room-card .r-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+
 /* API SETUP */
 .setup-banner{background:var(--bg2);border:1px solid rgba(201,168,76,.25);border-radius:var(--r);padding:18px;margin-bottom:18px;}
 .setup-banner h3{font-size:13px;font-weight:500;color:var(--gold2);margin-bottom:4px;}
@@ -193,11 +202,29 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
   <div class="step active" id="step-1">
     <div class="eyebrow">Paso 1 de 4</div>
     <div class="title">Tu reserva</div>
-    <div class="subtitle">Selecciona tu reserva de Airbnb.</div>
+    <div class="subtitle">Primero selecciona el alojamiento de tu reserva.</div>
 
     <div class="err" id="err-1"></div>
 
-    <div class="card" id="ical-loading">
+    <!-- ROOM SELECTOR -->
+    <div id="room-selector">
+      <div class="card-label" style="margin-bottom:10px">¿En qué alojamiento te hospedas?</div>
+      <div class="room-grid">
+        <div class="room-card" id="room-card-1" onclick="selectRoom(1)">
+          <div class="r-icon">🏠</div>
+          <div class="r-name">Habitación 1</div>
+          <div class="r-sub">Anika's House</div>
+        </div>
+        <div class="room-card" id="room-card-2" onclick="selectRoom(2)">
+          <div class="r-icon">🏡</div>
+          <div class="r-name">Habitación 2</div>
+          <div class="r-sub">Anika's House</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- iCAL LOADING (hidden until room selected) -->
+    <div class="card" id="ical-loading" style="display:none">
       <div style="text-align:center;padding:20px 0">
         <div class="spinner"></div>
         <div class="extract-status">Cargando reservas de Airbnb...</div>
@@ -475,9 +502,30 @@ function goStep(n) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 1 — iCAL LOADER
+// STEP 1 — ROOM SELECTOR + iCAL LOADER
 // ═══════════════════════════════════════════════════════════
-const ICAL_URL = '__ICAL_URL__';
+const ICAL_URLS = {
+  1: '__ICAL_URL__',
+  2: '__ICAL_URL_2__'
+};
+const ROOMS = {
+  1: { name: 'Habitación 1', sub: "Anika's House" },
+  2: { name: 'Habitación 2', sub: "Anika's House" }
+};
+let selectedRoom = null;
+
+function selectRoom(n) {
+  selectedRoom = n;
+  document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('room-card-' + n).classList.add('selected');
+  // Short delay so user sees the selection before loading
+  setTimeout(() => {
+    document.getElementById('room-selector').style.display = 'none';
+    document.getElementById('ical-loading').style.display = 'block';
+    loadIcal(ICAL_URLS[n]);
+  }, 300);
+}
+
 // Multiple proxies to try in order
 const ICAL_PROXIES = [
   'https://corsproxy.io/?',
@@ -485,13 +533,13 @@ const ICAL_PROXIES = [
   'https://cors-anywhere.herokuapp.com/'
 ];
 
-async function loadIcal() {
+async function loadIcal(icalUrl) {
   try {
     let text = null;
     let lastErr = null;
     for (const proxy of ICAL_PROXIES) {
       try {
-        const res = await fetch(proxy + encodeURIComponent(ICAL_URL));
+        const res = await fetch(proxy + encodeURIComponent(icalUrl));
         if (!res.ok) continue;
         text = await res.text();
         if (text && text.includes('BEGIN:VCALENDAR')) break;
@@ -919,7 +967,7 @@ function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMi
 
 function resetAll() {
   dniData={}; airbnbData={}; capturedImage=null; fileContent='';
-  document.getElementById('airbnb-email').value='';
+  const emailEl = document.getElementById('airbnb-email'); if(emailEl) emailEl.value='';
   document.getElementById('airbnb-result').style.display='none';
   document.getElementById('btn-next-1').disabled=true;
   document.getElementById('preview-img').style.display='none';
@@ -938,6 +986,12 @@ function resetAll() {
   document.getElementById('prog-wrap').style.display='block';
   document.getElementById('doc-ai-badge').style.display='none';
   document.getElementById('stay-ai-badge').style.display='none';
+  // Reset room selector
+  selectedRoom = null;
+  document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('room-selector').style.display = 'block';
+  document.getElementById('ical-loading').style.display = 'none';
+  document.getElementById('ical-list').style.display = 'none';
   goStep(1);
 }
 
