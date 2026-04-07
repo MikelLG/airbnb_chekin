@@ -361,8 +361,120 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
         </div>
         <div class="row2">
           <div class="field">
-            <label>Nacionalidad (ISO-3)</label>
-            <input type="text" id="f-nac" placeholder="ESP" maxlength="3">
+            <label>Nacionalidad</label>
+            <select id="f-nac">
+              <optgroup label="Más frecuentes">
+                <option value="ESP">España</option>
+                <option value="FRA">Francia</option>
+                <option value="DEU">Alemania</option>
+                <option value="GBR">Reino Unido</option>
+                <option value="ITA">Italia</option>
+                <option value="PRT">Portugal</option>
+                <option value="NLD">Países Bajos</option>
+                <option value="BEL">Bélgica</option>
+                <option value="CHE">Suiza</option>
+                <option value="AUT">Austria</option>
+                <option value="USA">Estados Unidos</option>
+                <option value="CAN">Canadá</option>
+                <option value="AUS">Australia</option>
+                <option value="JPN">Japón</option>
+                <option value="CHN">China</option>
+                <option value="MEX">México</option>
+                <option value="BRA">Brasil</option>
+                <option value="ARG">Argentina</option>
+              </optgroup>
+              <optgroup label="Europa">
+                <option value="ALB">Albania</option>
+                <option value="AND">Andorra</option>
+                <option value="BIH">Bosnia-Herzegovina</option>
+                <option value="BGR">Bulgaria</option>
+                <option value="HRV">Croacia</option>
+                <option value="CYP">Chipre</option>
+                <option value="CZE">República Checa</option>
+                <option value="DNK">Dinamarca</option>
+                <option value="EST">Estonia</option>
+                <option value="FIN">Finlandia</option>
+                <option value="GRC">Grecia</option>
+                <option value="HUN">Hungría</option>
+                <option value="IRL">Irlanda</option>
+                <option value="ISL">Islandia</option>
+                <option value="LVA">Letonia</option>
+                <option value="LIE">Liechtenstein</option>
+                <option value="LTU">Lituania</option>
+                <option value="LUX">Luxemburgo</option>
+                <option value="MLT">Malta</option>
+                <option value="MDA">Moldavia</option>
+                <option value="MCO">Mónaco</option>
+                <option value="MNE">Montenegro</option>
+                <option value="MKD">Macedonia del Norte</option>
+                <option value="NOR">Noruega</option>
+                <option value="POL">Polonia</option>
+                <option value="ROU">Rumanía</option>
+                <option value="RUS">Rusia</option>
+                <option value="SMR">San Marino</option>
+                <option value="SRB">Serbia</option>
+                <option value="SVK">Eslovaquia</option>
+                <option value="SVN">Eslovenia</option>
+                <option value="SWE">Suecia</option>
+                <option value="TUR">Turquía</option>
+                <option value="UKR">Ucrania</option>
+              </optgroup>
+              <optgroup label="América">
+                <option value="BOL">Bolivia</option>
+                <option value="CHL">Chile</option>
+                <option value="COL">Colombia</option>
+                <option value="CRI">Costa Rica</option>
+                <option value="CUB">Cuba</option>
+                <option value="DOM">Rep. Dominicana</option>
+                <option value="ECU">Ecuador</option>
+                <option value="GTM">Guatemala</option>
+                <option value="HND">Honduras</option>
+                <option value="JAM">Jamaica</option>
+                <option value="NIC">Nicaragua</option>
+                <option value="PAN">Panamá</option>
+                <option value="PRY">Paraguay</option>
+                <option value="PER">Perú</option>
+                <option value="URY">Uruguay</option>
+                <option value="VEN">Venezuela</option>
+              </optgroup>
+              <optgroup label="Asia y Oceanía">
+                <option value="BGD">Bangladesh</option>
+                <option value="IND">India</option>
+                <option value="IDN">Indonesia</option>
+                <option value="IRN">Irán</option>
+                <option value="ISR">Israel</option>
+                <option value="KOR">Corea del Sur</option>
+                <option value="MYS">Malasia</option>
+                <option value="NPL">Nepal</option>
+                <option value="NZL">Nueva Zelanda</option>
+                <option value="PAK">Pakistán</option>
+                <option value="PHL">Filipinas</option>
+                <option value="SGP">Singapur</option>
+                <option value="LKA">Sri Lanka</option>
+                <option value="THA">Tailandia</option>
+                <option value="VNM">Vietnam</option>
+              </optgroup>
+              <optgroup label="África y Oriente Medio">
+                <option value="DZA">Argelia</option>
+                <option value="EGY">Egipto</option>
+                <option value="ETH">Etiopía</option>
+                <option value="GHA">Ghana</option>
+                <option value="IRQ">Irak</option>
+                <option value="JOR">Jordania</option>
+                <option value="KEN">Kenia</option>
+                <option value="KWT">Kuwait</option>
+                <option value="LBN">Líbano</option>
+                <option value="LBY">Libia</option>
+                <option value="MAR">Marruecos</option>
+                <option value="NGA">Nigeria</option>
+                <option value="QAT">Qatar</option>
+                <option value="SAU">Arabia Saudí</option>
+                <option value="SEN">Senegal</option>
+                <option value="ZAF">Sudáfrica</option>
+                <option value="TUN">Túnez</option>
+                <option value="ARE">Emiratos Árabes</option>
+              </optgroup>
+            </select>
           </div>
           <div class="field">
             <label>Nº soporte (DNI/NIE)</label>
@@ -399,8 +511,32 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
         </div>
         <div class="row2">
           <div class="field">
-            <label>País (ISO-3)</label>
-            <input type="text" id="f-pais" value="ESP" maxlength="3" oninput="togglePostalFields()">
+            <label>País</label>
+            <select id="f-pais" onchange="togglePostalFields()">
+              <option value="ESP">España</option>
+              <option value="FRA">Francia</option>
+              <option value="DEU">Alemania</option>
+              <option value="GBR">Reino Unido</option>
+              <option value="ITA">Italia</option>
+              <option value="PRT">Portugal</option>
+              <option value="NLD">Países Bajos</option>
+              <option value="BEL">Bélgica</option>
+              <option value="CHE">Suiza</option>
+              <option value="AUT">Austria</option>
+              <option value="USA">Estados Unidos</option>
+              <option value="CAN">Canadá</option>
+              <option value="AUS">Australia</option>
+              <option value="MEX">México</option>
+              <option value="BRA">Brasil</option>
+              <option value="ARG">Argentina</option>
+              <option value="COL">Colombia</option>
+              <option value="CHN">China</option>
+              <option value="JPN">Japón</option>
+              <option value="IND">India</option>
+              <option value="RUS">Rusia</option>
+              <option value="MAR">Marruecos</option>
+              <option value="OTHER">Otro</option>
+            </select>
           </div>
           <div class="field">
             <label>Código postal</label>
@@ -411,8 +547,62 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
         <div id="postal-esp">
           <div class="row2">
             <div class="field">
-              <label>Provincia (INE 2 dígitos)</label>
-              <input type="text" id="f-provincia" placeholder="08" maxlength="2">
+              <label>Provincia</label>
+              <select id="f-provincia">
+                <option value="">— Selecciona —</option>
+                <option value="01">Álava</option>
+                <option value="02">Albacete</option>
+                <option value="03">Alicante</option>
+                <option value="04">Almería</option>
+                <option value="05">Ávila</option>
+                <option value="06">Badajoz</option>
+                <option value="07">Balears (Illes)</option>
+                <option value="08">Barcelona</option>
+                <option value="09">Burgos</option>
+                <option value="10">Cáceres</option>
+                <option value="11">Cádiz</option>
+                <option value="12">Castellón</option>
+                <option value="13">Ciudad Real</option>
+                <option value="14">Córdoba</option>
+                <option value="15">Coruña (A)</option>
+                <option value="16">Cuenca</option>
+                <option value="17">Girona</option>
+                <option value="18">Granada</option>
+                <option value="19">Guadalajara</option>
+                <option value="20">Gipuzkoa</option>
+                <option value="21">Huelva</option>
+                <option value="22">Huesca</option>
+                <option value="23">Jaén</option>
+                <option value="24">León</option>
+                <option value="25">Lleida</option>
+                <option value="26">Rioja (La)</option>
+                <option value="27">Lugo</option>
+                <option value="28">Madrid</option>
+                <option value="29">Málaga</option>
+                <option value="30">Murcia</option>
+                <option value="31">Navarra</option>
+                <option value="32">Ourense</option>
+                <option value="33">Asturias</option>
+                <option value="34">Palencia</option>
+                <option value="35">Palmas (Las)</option>
+                <option value="36">Pontevedra</option>
+                <option value="37">Salamanca</option>
+                <option value="38">Santa Cruz de Tenerife</option>
+                <option value="39">Cantabria</option>
+                <option value="40">Segovia</option>
+                <option value="41">Sevilla</option>
+                <option value="42">Soria</option>
+                <option value="43">Tarragona</option>
+                <option value="44">Teruel</option>
+                <option value="45">Toledo</option>
+                <option value="46">Valencia</option>
+                <option value="47">Valladolid</option>
+                <option value="48">Bizkaia</option>
+                <option value="49">Zamora</option>
+                <option value="50">Zaragoza</option>
+                <option value="51">Ceuta</option>
+                <option value="52">Melilla</option>
+              </select>
             </div>
             <div class="field">
               <label>Municipio (INE 6 dígitos)</label>
@@ -420,11 +610,17 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             </div>
           </div>
         </div>
-        <!-- Non-Spain field -->
+        <!-- Non-Spain fields -->
         <div id="postal-ext" style="display:none">
-          <div class="field">
-            <label>Localidad</label>
-            <input type="text" id="f-loc" placeholder="Barcelona">
+          <div class="row2">
+            <div class="field">
+              <label>Localidad</label>
+              <input type="text" id="f-loc" placeholder="London">
+            </div>
+            <div class="field" id="postal-other-wrap" style="display:none">
+              <label>País (ISO-3)</label>
+              <input type="text" id="f-pais-other" placeholder="GBR" maxlength="3" style="text-transform:uppercase">
+            </div>
           </div>
         </div>
       </div>
@@ -722,9 +918,12 @@ function selectReservation(r) {
 }
 
 function togglePostalFields() {
-  const isEsp = (document.getElementById('f-pais').value||'ESP').toUpperCase() === 'ESP';
+  const val = (document.getElementById('f-pais').value||'ESP').toUpperCase();
+  const isEsp = val === 'ESP';
+  const isOther = val === 'OTHER';
   document.getElementById('postal-esp').style.display = isEsp ? 'block' : 'none';
   document.getElementById('postal-ext').style.display = isEsp ? 'none' : 'block';
+  document.getElementById('postal-other-wrap').style.display = isOther ? 'block' : 'none';
 }
 
 function skipAirbnb() {
@@ -924,8 +1123,9 @@ function generateFile() {
   const salFmt = salida.replace(/-/g,'');
   const hIn = (v('f-hora-in')||'15:00').replace(':','');
   const hOut = (v('f-hora-out')||'11:00').replace(':','');
-  const paisPostal = (v('f-pais')||'ESP').toUpperCase();
-  const isEsp = paisPostal === 'ESP';
+  const paisPostalRaw = (v('f-pais')||'ESP').toUpperCase();
+  const paisPostal = paisPostalRaw === 'OTHER' ? (v('f-pais-other')||'').toUpperCase() : paisPostalRaw;
+  const isEsp = paisPostalRaw === 'ESP';
 
   // R=Reserva if future, C=Contracte en curs if today/past
   const tipusContracte2 = entFmt >= fmtDate(now) ? 'R' : 'C';
