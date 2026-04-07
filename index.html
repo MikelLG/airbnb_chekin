@@ -624,9 +624,11 @@ function parseIcal(text) {
     if (end < today) continue;
     if (summary.toLowerCase().includes('blocked') || summary.toLowerCase().includes('no disponible')) continue;
 
-    // Extract confirmation code from UID or summary
-    const codeMatch = (uid + summary).match(/HM[A-Z0-9]{6,10}/i);
-    const codigo = codeMatch ? codeMatch[0].toUpperCase() : uid.split('@')[0].slice(0,10).toUpperCase();
+    // Extract confirmation code from URL field (/details/HMXXXXXX), then UID/summary fallback
+    const urlField = get('URL');
+    const detailsMatch = urlField.match(/\/details\/([A-Z0-9]+)/i);
+    const codeMatch = detailsMatch || (uid + summary).match(/HM[A-Z0-9]{6,10}/i);
+    const codigo = detailsMatch ? detailsMatch[1].toUpperCase() : (codeMatch ? codeMatch[0].toUpperCase() : uid.split('@')[0].slice(0,10).toUpperCase());
 
     // Num guests from summary
     const guestMatch = summary.match(/(\d+)\s*(guest|huésped|persona)/i);
