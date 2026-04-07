@@ -16,6 +16,18 @@ import base64
 import argparse
 from datetime import datetime, date
 
+# Load .env if present
+def _load_env():
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip())
+_load_env()
+
 # ─── CONFIGURACIÓN DEL ESTABLECIMIENTO ───────────────────────────────────────
 ESTABLECIMIENTO = {
     "id_policial": "ID50044239",
@@ -234,7 +246,7 @@ Responde SOLO con un JSON válido con estos campos exactos (usa "" si no encuent
 No incluyas ningún texto adicional, solo el JSON."""
 
     payload = json.dumps({
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-sonnet-4-6",
         "max_tokens": 1000,
         "messages": [{
             "role": "user",
@@ -252,11 +264,17 @@ No incluyas ningún texto adicional, solo el JSON."""
         }]
     }).encode("utf-8")
 
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        print("❌ Falta ANTHROPIC_API_KEY en el fichero .env")
+        return None
+
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
         data=payload,
         headers={
             "Content-Type": "application/json",
+            "x-api-key": api_key,
             "anthropic-version": "2023-06-01"
         }
     )
@@ -294,17 +312,6 @@ def main():
         else:
             print("No hay ficheros generados todavía.")
         return
-
-    # Auto-detect: R (reserva) if entry date is future, C (contracte en curs) if today or past
-    if args.reserva:
-        tipo_contrato = "R"
-    else:
-        try:
-            entrada_str = viatgers[0].get("data_entrada", "") if viatgers else ""
-            entrada_date = datetime.strptime(entrada_str, "%Y%m%d").date()
-            tipo_contrato = "R" if entrada_date > date.today() else "C"
-        except:
-            tipo_contrato = "C" 
 
     if args.foto:
         # Modo automático con foto
@@ -349,6 +356,16 @@ def main():
     else:
         # Modo manual
         viatgers = input_manual()
+
+    # Auto-detect tipo_contrato based on first traveler's entry date
+    if args.reserva:
+        tipo_contrato = "R"
+    else:
+        try:
+            entrada_date = datetime.strptime(viatgers[0].get("data_entrada", ""), "%Y%m%d").date()
+            tipo_contrato = "R" if entrada_date > date.today() else "C"
+        except:
+            tipo_contrato = "C"
 
     # Generar fichero
     contador = get_next_counter()
