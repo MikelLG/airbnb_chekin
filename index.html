@@ -150,6 +150,9 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 .room-card .r-name{font-size:13px;font-weight:500;color:var(--text);}
 .room-card .r-sub{font-size:10px;color:var(--text3);margin-top:2px;}
 
+/* REQUIRED MARK */
+.req{color:var(--err);margin-right:2px;}
+
 /* API SETUP */
 .setup-banner{background:var(--bg2);border:1px solid rgba(201,168,76,.25);border-radius:var(--r);padding:18px;margin-bottom:18px;}
 .setup-banner h3{font-size:13px;font-weight:500;color:var(--gold2);margin-bottom:4px;}
@@ -311,13 +314,17 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 
     <div class="err" id="err-3"></div>
 
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+      <span style="color:var(--err)">*</span> Campo obligatorio &nbsp;·&nbsp; Nº soporte solo para DNI/NIE españoles
+    </div>
+
     <!-- Datos documento -->
     <div class="card">
       <div class="card-label">Documento de identidad <span class="ai-badge" id="doc-ai-badge" style="display:none">IA</span></div>
       <div class="form-grid">
         <div class="row2">
           <div class="field">
-            <label>Tipo documento</label>
+            <label><span class="req">*</span> Tipo documento</label>
             <select id="f-tipo">
               <option value="D">DNI / NIF</option>
               <option value="P">Pasaporte</option>
@@ -326,13 +333,13 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             </select>
           </div>
           <div class="field">
-            <label>Número</label>
+            <label><span class="req">*</span> Número</label>
             <input type="text" id="f-numdoc" placeholder="12345678A">
           </div>
         </div>
         <div class="row2">
           <div class="field">
-            <label>Primer apellido</label>
+            <label><span class="req">*</span> Primer apellido</label>
             <input type="text" id="f-ap1" placeholder="García">
           </div>
           <div class="field">
@@ -341,7 +348,7 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
           </div>
         </div>
         <div class="field">
-          <label>Nombre</label>
+          <label><span class="req">*</span> Nombre</label>
           <input type="text" id="f-nom" placeholder="María">
         </div>
         <div class="row2">
@@ -477,7 +484,7 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             </select>
           </div>
           <div class="field">
-            <label>Nº soporte (DNI/NIE)</label>
+            <label>Nº soporte <span style="color:var(--text3);font-size:9px">(solo DNI/NIE)</span></label>
             <input type="text" id="f-suport" placeholder="AAA123456" maxlength="9">
           </div>
         </div>
@@ -486,27 +493,16 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             <label>Fecha expedición doc</label>
             <input type="date" id="f-exp">
           </div>
-          <div class="field">
-            <label>Tipo pago</label>
-            <select id="f-pagament">
-              <option value="PLATF">Plataforma (Airbnb)</option>
-              <option value="TARJT">Tarjeta</option>
-              <option value="EFECT">Efectivo</option>
-              <option value="TRANS">Transferencia</option>
-              <option value="MOVIL">Pago móvil</option>
-              <option value="OTRO">Otro</option>
-            </select>
-          </div>
         </div>
       </div>
     </div>
 
     <!-- Dirección postal -->
     <div class="card">
-      <div class="card-label">Dirección postal del huésped</div>
+      <div class="card-label">Dirección postal del huésped <span style="color:var(--text3);font-size:9px;font-weight:400">(obligatoria si ya está alojado)</span></div>
       <div class="form-grid">
         <div class="field">
-          <label>Calle y número</label>
+          <label><span class="req">*</span> Calle y número</label>
           <input type="text" id="f-adreca" placeholder="Calle Mayor 10, 3º 2ª">
         </div>
         <div class="row2">
@@ -631,12 +627,12 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
       <div class="card-label">Estancia <span class="ai-badge" id="stay-ai-badge" style="display:none">Airbnb</span></div>
       <div class="form-grid">
         <div class="field">
-          <label>Nº reserva Airbnb</label>
+          <label><span class="req">*</span> Nº reserva Airbnb</label>
           <input type="text" id="f-reserva" placeholder="HMXXXXXXXX">
         </div>
         <div class="row2">
           <div class="field">
-            <label>Fecha entrada</label>
+            <label><span class="req">*</span> Fecha entrada</label>
             <input type="date" id="f-entrada">
           </div>
           <div class="field">
@@ -646,7 +642,7 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
         </div>
         <div class="row2">
           <div class="field">
-            <label>Fecha salida</label>
+            <label><span class="req">*</span> Fecha salida</label>
             <input type="date" id="f-salida">
           </div>
           <div class="field">
@@ -660,12 +656,12 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             <input type="number" id="f-nviat" value="1" min="1" max="20">
           </div>
           <div class="field">
-            <label>Teléfono</label>
+            <label><span class="req">*</span> Teléfono <span style="color:var(--text3);font-size:9px">o email</span></label>
             <input type="tel" id="f-tel" placeholder="+34 600 000 000">
           </div>
         </div>
         <div class="field">
-          <label>Email</label>
+          <label><span class="req">*</span> Email <span style="color:var(--text3);font-size:9px">o teléfono</span></label>
           <input type="email" id="f-email" placeholder="correo@ejemplo.com">
         </div>
       </div>
@@ -1121,6 +1117,7 @@ function generateFile() {
 
   if (!numdoc||!ap1||!nom) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return; }
   if (!entrada||!salida||!reserva) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return; }
+  if (!v('f-tel') && !v('f-email')) { showErr('err-3','Es obligatorio indicar al menos teléfono o email del huésped.'); return; }
   if (new Date(salida) <= new Date(entrada)) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return; }
 
   const now = new Date();
@@ -1179,7 +1176,7 @@ function generateFile() {
     v('f-nviat')||'1',                                   // 19. Num viatgers
     '1',                                                 // 20. Num habitacions
     'N',                                                 // 21. Internet
-    v('f-pagament')||'PLATF',                            // 22. Tipus pagament
+    'PLATF',                                             // 22. Tipus pagament (Airbnb)
     telClean,                                            // 23. Telèfon
     '',                                                  // 24. Parentesc
     v('f-email')||'',                                    // 25. Email
