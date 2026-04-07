@@ -488,11 +488,9 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             <input type="text" id="f-suport" placeholder="AAA123456" maxlength="9">
           </div>
         </div>
-        <div class="row2">
-          <div class="field">
-            <label>Fecha expedición doc</label>
-            <input type="date" id="f-exp">
-          </div>
+        <div class="field">
+          <label>Fecha expedición doc</label>
+          <input type="date" id="f-exp">
         </div>
       </div>
     </div>
@@ -650,19 +648,20 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             <input type="time" id="f-hora-out" value="11:00">
           </div>
         </div>
+        <div class="field">
+          <label>Total huéspedes</label>
+          <input type="number" id="f-nviat" value="1" min="1" max="20">
+        </div>
+        <div class="card-label" style="margin-top:4px;margin-bottom:8px"><span class="req">*</span> Contacto <span style="color:var(--text3);font-size:9px;font-weight:400">(teléfono o email, al menos uno)</span></div>
         <div class="row2">
           <div class="field">
-            <label>Total huéspedes</label>
-            <input type="number" id="f-nviat" value="1" min="1" max="20">
-          </div>
-          <div class="field">
-            <label><span class="req">*</span> Teléfono <span style="color:var(--text3);font-size:9px">o email</span></label>
+            <label>Teléfono</label>
             <input type="tel" id="f-tel" placeholder="+34 600 000 000">
           </div>
-        </div>
-        <div class="field">
-          <label><span class="req">*</span> Email <span style="color:var(--text3);font-size:9px">o teléfono</span></label>
-          <input type="email" id="f-email" placeholder="correo@ejemplo.com">
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="f-email" placeholder="correo@ejemplo.com">
+          </div>
         </div>
       </div>
     </div>
