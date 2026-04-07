@@ -142,10 +142,11 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 
 /* ROOM SELECTOR */
 .room-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.room-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:16px 12px;cursor:pointer;text-align:center;transition:all .2s;}
+.room-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);overflow:hidden;cursor:pointer;text-align:center;transition:all .2s;}
 .room-card:hover{border-color:var(--gold);}
-.room-card.selected{border-color:var(--gold);background:var(--gold-dim);}
-.room-card .r-icon{font-size:22px;margin-bottom:6px;}
+.room-card.selected{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold);}
+.room-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;}
+.room-card .r-info{padding:10px 12px;}
 .room-card .r-name{font-size:13px;font-weight:500;color:var(--text);}
 .room-card .r-sub{font-size:10px;color:var(--text3);margin-top:2px;}
 
@@ -211,14 +212,18 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
       <div class="card-label" style="margin-bottom:10px">¿En qué alojamiento te hospedas?</div>
       <div class="room-grid">
         <div class="room-card" id="room-card-1" onclick="selectRoom(1)">
-          <div class="r-icon">🏠</div>
-          <div class="r-name">Habitación 1</div>
-          <div class="r-sub">Anika's House</div>
+          <img src="Hab1.avif" alt="Habitación 1">
+          <div class="r-info">
+            <div class="r-name">Habitación 1</div>
+            <div class="r-sub">Anika's House</div>
+          </div>
         </div>
         <div class="room-card" id="room-card-2" onclick="selectRoom(2)">
-          <div class="r-icon">🏡</div>
-          <div class="r-name">Habitación 2</div>
-          <div class="r-sub">Anika's House</div>
+          <img src="Hab2.avif" alt="Habitación 2">
+          <div class="r-info">
+            <div class="r-name">Habitación 2</div>
+            <div class="r-sub">Anika's House</div>
+          </div>
         </div>
       </div>
     </div>
