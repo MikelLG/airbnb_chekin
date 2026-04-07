@@ -927,7 +927,7 @@ function togglePostalFields() {
 }
 
 function skipAirbnb() {
-  airbnbData = {};
+  // Don't clear airbnbData — user may have already selected a reservation
   goStep(2);
 }
 
@@ -1061,6 +1061,9 @@ function fillStep3() {
     if (dniData.data_naix && dniData.data_naix.length===8) {
       setAI('f-naix', dniData.data_naix.slice(0,4)+'-'+dniData.data_naix.slice(4,6)+'-'+dniData.data_naix.slice(6,8));
     }
+    if (dniData.data_exp && dniData.data_exp.length===8) {
+      setAI('f-exp', dniData.data_exp.slice(0,4)+'-'+dniData.data_exp.slice(4,6)+'-'+dniData.data_exp.slice(6,8));
+    }
     document.getElementById('doc-ai-badge').style.display = 'inline-block';
   }
 
@@ -1084,6 +1087,16 @@ function setAI(id, val) {
   if (!val) return;
   const el = document.getElementById(id);
   if (!el) return;
+  // For selects: if value not in options, add it dynamically
+  if (el.tagName === 'SELECT') {
+    const exists = Array.from(el.options).some(o => o.value === val);
+    if (!exists) {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      el.insertBefore(opt, el.firstChild);
+    }
+  }
   el.value = val;
   el.classList.add('ai');
 }
