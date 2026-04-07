@@ -369,6 +369,64 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
             <input type="text" id="f-suport" placeholder="AAA123456" maxlength="9">
           </div>
         </div>
+        <div class="row2">
+          <div class="field">
+            <label>Fecha expedición doc</label>
+            <input type="date" id="f-exp">
+          </div>
+          <div class="field">
+            <label>Tipo pago</label>
+            <select id="f-pagament">
+              <option value="PLATF">Plataforma (Airbnb)</option>
+              <option value="TARJT">Tarjeta</option>
+              <option value="EFECT">Efectivo</option>
+              <option value="TRANS">Transferencia</option>
+              <option value="MOVIL">Pago móvil</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dirección postal -->
+    <div class="card">
+      <div class="card-label">Dirección postal del huésped</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Calle y número</label>
+          <input type="text" id="f-adreca" placeholder="Calle Mayor 10, 3º 2ª">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>País (ISO-3)</label>
+            <input type="text" id="f-pais" value="ESP" maxlength="3" oninput="togglePostalFields()">
+          </div>
+          <div class="field">
+            <label>Código postal</label>
+            <input type="text" id="f-cp" placeholder="08001" maxlength="20">
+          </div>
+        </div>
+        <!-- Spain fields -->
+        <div id="postal-esp">
+          <div class="row2">
+            <div class="field">
+              <label>Provincia (INE 2 dígitos)</label>
+              <input type="text" id="f-provincia" placeholder="08" maxlength="2">
+            </div>
+            <div class="field">
+              <label>Municipio (INE 6 dígitos)</label>
+              <input type="text" id="f-municipi" placeholder="080193" maxlength="6">
+            </div>
+          </div>
+        </div>
+        <!-- Non-Spain field -->
+        <div id="postal-ext" style="display:none">
+          <div class="field">
+            <label>Localidad</label>
+            <input type="text" id="f-loc" placeholder="Barcelona">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -417,11 +475,6 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
       </div>
     </div>
 
-    <!-- Dirección postal — campos ocultos con valores vacíos -->
-    <input type="hidden" id="f-adreca" value="">
-    <input type="hidden" id="f-pais" value="ESP">
-    <input type="hidden" id="f-cp" value="">
-    <input type="hidden" id="f-loc" value="">
 
     <button class="btn btn-gold" onclick="generateFile()">Generar fichero Mossos →</button>
     <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
@@ -668,6 +721,12 @@ function selectReservation(r) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+function togglePostalFields() {
+  const isEsp = (document.getElementById('f-pais').value||'ESP').toUpperCase() === 'ESP';
+  document.getElementById('postal-esp').style.display = isEsp ? 'block' : 'none';
+  document.getElementById('postal-ext').style.display = isEsp ? 'none' : 'block';
+}
+
 function skipAirbnb() {
   airbnbData = {};
   goStep(2);
@@ -865,16 +924,21 @@ function generateFile() {
   const salFmt = salida.replace(/-/g,'');
   const hIn = (v('f-hora-in')||'15:00').replace(':','');
   const hOut = (v('f-hora-out')||'11:00').replace(':','');
-  const pais = (v('f-pais')||'ESP').toUpperCase();
+  const paisPostal = (v('f-pais')||'ESP').toUpperCase();
+  const isEsp = paisPostal === 'ESP';
 
-  // No line 0 — single establishment only
-  // Use fixed 09:00 time to avoid future time rejection by Mossos
+  // R=Reserva if future, C=Contracte en curs if today/past
+  const tipusContracte2 = entFmt >= fmtDate(now) ? 'R' : 'C';
+
+  // Validate postal address for Contracte en curs
+  if (tipusContracte2 === 'C') {
+    if (!v('f-adreca')) { showErr('err-3','La dirección postal es obligatoria para estancias en curso.'); return; }
+    if (!v('f-cp')) { showErr('err-3','El código postal es obligatorio.'); return; }
+    if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia (código INE) es obligatoria.'); return; }
+    if (!isEsp && !v('f-loc')) { showErr('err-3','La localidad es obligatoria para huéspedes extranjeros.'); return; }
+  }
+
   const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, '0900', '1', 'V24'].join('|');
-
-  // R=Reserva for future entries, C=Contracte en curs for today/past
-  const tipusContracte = entFmt >= fmtDate(now) ? 'R' : 'C';
-
-  // Clean phone: remove spaces, +, dashes — only digits, max 20
   const telClean = (v('f-tel')||'').replace(/[^0-9]/g, '').slice(0, 20);
 
   // Contract date must be today or earlier (not future)
@@ -885,7 +949,7 @@ function generateFile() {
     docE,                                 // 2. Num doc espanyol
     docX,                                 // 3. Num doc estranger
     tipo,                                 // 4. Tipus document
-    dniData.data_exp || '',               // 5. Data expedició
+    (v('f-exp')||dniData.data_exp||'').replace(/-/g,''), // 5. Data expedició
     (v('f-ap1')||'').toUpperCase(),       // 6. Primer cognom
     (v('f-ap2')||'').toUpperCase(),       // 7. Segon cognom
     (v('f-nom')||'').toUpperCase(),       // 8. Nom
@@ -896,23 +960,23 @@ function generateFile() {
     hIn,                                  // 13. Hora entrada
     salFmt,                               // 14. Data sortida
     hOut,                                 // 15. Hora sortida
-    contractDate,                         // 16. Data contracte
-    tipusContracte,                       // 17. Tipus contracte (C=actual, R=reserva futura)
-    reserva.toUpperCase(),               // 18. Num contracte
-    v('f-nviat')||'1',                    // 19. Num viatgers
-    '1',                                  // 20. Num habitacions
-    'N',                                  // 21. Internet
-    'PLATF',                              // 22. Tipus pagament
-    telClean,                             // 23. Telèfon
-    '',                                   // 24. Parentesc
-    v('f-email')||'',                     // 25. Email
-    (v('f-suport')||'').toUpperCase(),    // 26. Num suport doc
-    '',                                   // 27. Adreça
-    '',                                   // 28. Província
-    '',                                   // 29. Municipi
-    '',                                   // 30. Localitat
-    '',                                   // 31. País postal
-    ''                                    // 32. Codi postal
+    contractDate,                                        // 16. Data contracte
+    tipusContracte2,                                     // 17. Tipus contracte
+    reserva.toUpperCase(),                               // 18. Num contracte
+    v('f-nviat')||'1',                                   // 19. Num viatgers
+    '1',                                                 // 20. Num habitacions
+    'N',                                                 // 21. Internet
+    v('f-pagament')||'PLATF',                            // 22. Tipus pagament
+    telClean,                                            // 23. Telèfon
+    '',                                                  // 24. Parentesc
+    v('f-email')||'',                                    // 25. Email
+    (v('f-suport')||'').toUpperCase(),                   // 26. Num suport doc
+    v('f-adreca')||'',                                   // 27. Adreça
+    isEsp ? (v('f-provincia')||'') : '',                 // 28. Província
+    isEsp ? (v('f-municipi')||'') : '',                  // 29. Municipi
+    isEsp ? '' : (v('f-loc')||''),                       // 30. Localitat
+    paisPostal,                                          // 31. País postal
+    v('f-cp')||''                                        // 32. Codi postal
   ];
 
   fileContent = linEstab + '\r\n' + campos.join('|');
@@ -984,7 +1048,7 @@ function resetAll() {
   document.getElementById('btn-extract-dni').disabled=true;
   document.getElementById('cam-btns').style.display='flex';
   document.querySelectorAll('input,select,textarea').forEach(el=>{
-    if(el.id==='api-key-inp'||el.id==='f-nviat'||el.id==='f-hora-in'||el.id==='f-hora-out'||el.id==='f-pais') return;
+    if(el.id==='api-key-inp'||el.id==='f-nviat'||el.id==='f-hora-in'||el.id==='f-hora-out') return;
     if(el.type!=='button') el.value='';
     el.classList.remove('ai');
   });
@@ -992,6 +1056,7 @@ function resetAll() {
   document.getElementById('f-hora-in').value='15:00';
   document.getElementById('f-hora-out').value='11:00';
   document.getElementById('f-pais').value='ESP';
+  togglePostalFields();
   document.getElementById('prog-wrap').style.display='block';
   document.getElementById('doc-ai-badge').style.display='none';
   document.getElementById('stay-ai-badge').style.display='none';
