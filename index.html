@@ -667,7 +667,9 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
     </div>
 
 
-    <button class="btn btn-gold" onclick="generateFile()">Generar fichero Mossos →</button>
+    <div id="guest-progress" style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px;margin-bottom:4px"></div>
+    <button class="btn btn-gold" id="btn-add-guest" onclick="saveGuestAndNext()" style="display:none">Añadir siguiente huésped →</button>
+    <button class="btn btn-gold" id="btn-generate" onclick="generateFile()">Generar fichero Mossos →</button>
     <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
   </div>
 
@@ -724,6 +726,7 @@ let capturedMime = 'image/jpeg';
 let stream = null;
 let airbnbData = {};
 let dniData = {};
+let guestsList = [];  // accumulated guests before generating file
 
 // ═══════════════════════════════════════════════════════════
 // API KEY — injected at build time by GitHub Actions
@@ -1043,6 +1046,7 @@ Responde SOLO con JSON válido sin markdown:
 // STEP 3 — FILL FORM
 // ═══════════════════════════════════════════════════════════
 function fillStep3() {
+  updateGuestButtons();
   // DNI data
   if (Object.keys(dniData).length > 0) {
     setAI('f-tipo', dniData.tipus_doc);
@@ -1102,93 +1106,118 @@ function setVal(id, val) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 4 — GENERATE FILE
+// STEP 3 — GUEST MANAGEMENT
 // ═══════════════════════════════════════════════════════════
-function generateFile() {
-  hideErr('err-3');
+function updateGuestButtons() {
+  const total = parseInt(v('f-nviat') || '1');
+  const done = guestsList.length;
+  const remaining = total - done - 1; // -1 for current guest being filled
+  const prog = document.getElementById('guest-progress');
+  prog.textContent = total > 1 ? `Huésped ${done + 1} de ${total}` : '';
+  document.getElementById('btn-add-guest').style.display = remaining > 0 ? 'block' : 'none';
+  document.getElementById('btn-generate').style.display = remaining > 0 ? 'none' : 'block';
+}
 
+function readCurrentGuest() {
+  const tipo = v('f-tipo') || 'D';
   const numdoc = v('f-numdoc');
-  const ap1 = v('f-ap1');
-  const nom = v('f-nom');
   const entrada = v('f-entrada');
   const salida = v('f-salida');
-  const reserva = v('f-reserva');
-
-  if (!numdoc||!ap1||!nom) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return; }
-  if (!entrada||!salida||!reserva) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return; }
-  if (!v('f-tel') && !v('f-email')) { showErr('err-3','Es obligatorio indicar al menos teléfono o email del huésped.'); return; }
-  if (new Date(salida) <= new Date(entrada)) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return; }
-
   const now = new Date();
-  const fconf = fmtDate(now);
-  const hconf = fmtTime(now);
-
-  const tipo = v('f-tipo') || 'D';
-  const docE = tipo==='D' ? numdoc.toUpperCase() : '';
-  const docX = tipo!=='D' ? numdoc.toUpperCase() : '';
-
-  const naix = v('f-naix').replace(/-/g,'');
   const entFmt = entrada.replace(/-/g,'');
   const salFmt = salida.replace(/-/g,'');
-  const hIn = (v('f-hora-in')||'15:00').replace(':','');
-  const hOut = (v('f-hora-out')||'11:00').replace(':','');
   const paisPostalRaw = (v('f-pais')||'ESP').toUpperCase();
   const paisPostal = paisPostalRaw === 'OTHER' ? (v('f-pais-other')||'').toUpperCase() : paisPostalRaw;
   const isEsp = paisPostalRaw === 'ESP';
-
-  // R=Reserva if future, C=Contracte en curs if today/past
-  const tipusContracte2 = entFmt >= fmtDate(now) ? 'R' : 'C';
-
-  // Validate postal address for Contracte en curs
-  if (tipusContracte2 === 'C') {
-    if (!v('f-adreca')) { showErr('err-3','La dirección postal es obligatoria para estancias en curso.'); return; }
-    if (!v('f-cp')) { showErr('err-3','El código postal es obligatorio.'); return; }
-    if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia (código INE) es obligatoria.'); return; }
-    if (!isEsp && !v('f-loc')) { showErr('err-3','La localidad es obligatoria para huéspedes extranjeros.'); return; }
-  }
-
-  const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, '0900', '1', 'V24'].join('|');
-  const telClean = (v('f-tel')||'').replace(/[^0-9]/g, '').slice(0, 20);
-
-  // Contract date must be today or earlier (not future)
+  const tipusContracte = entFmt >= fmtDate(now) ? 'R' : 'C';
   const contractDate = entFmt <= fmtDate(now) ? entFmt : fmtDate(now);
-
-  const campos = [
-    '2',                                  // 1. Tipus registre
-    docE,                                 // 2. Num doc espanyol
-    docX,                                 // 3. Num doc estranger
-    tipo,                                 // 4. Tipus document
-    (v('f-exp')||dniData.data_exp||'').replace(/-/g,''), // 5. Data expedició
-    (v('f-ap1')||'').toUpperCase(),       // 6. Primer cognom
-    (v('f-ap2')||'').toUpperCase(),       // 7. Segon cognom
-    (v('f-nom')||'').toUpperCase(),       // 8. Nom
-    v('f-sexe')||'',                      // 9. Sexe
-    naix,                                 // 10. Data naixement
-    (v('f-nac')||'ESP').toUpperCase(),    // 11. País nacionalitat
-    entFmt,                               // 12. Data entrada
-    hIn,                                  // 13. Hora entrada
-    salFmt,                               // 14. Data sortida
-    hOut,                                 // 15. Hora sortida
-    contractDate,                                        // 16. Data contracte
-    tipusContracte2,                                     // 17. Tipus contracte
-    reserva.toUpperCase(),                               // 18. Num contracte
-    v('f-nviat')||'1',                                   // 19. Num viatgers
-    '1',                                                 // 20. Num habitacions
-    'N',                                                 // 21. Internet
-    'PLATF',                                             // 22. Tipus pagament (Airbnb)
-    telClean,                                            // 23. Telèfon
-    '',                                                  // 24. Parentesc
-    v('f-email')||'',                                    // 25. Email
-    (v('f-suport')||'').toUpperCase(),                   // 26. Num suport doc
-    v('f-adreca')||'',                                   // 27. Adreça
-    isEsp ? (v('f-provincia')||'') : '',                 // 28. Província
-    isEsp ? (v('f-municipi')||'') : '',                  // 29. Municipi
-    isEsp ? '' : (v('f-loc')||''),                       // 30. Localitat
-    paisPostal,                                          // 31. País postal
-    v('f-cp')||''                                        // 32. Codi postal
+  const telClean = (v('f-tel')||'').replace(/[^0-9]/g,'').slice(0,20);
+  return [
+    '2',
+    tipo==='D' ? numdoc.toUpperCase() : '',
+    tipo!=='D' ? numdoc.toUpperCase() : '',
+    tipo,
+    (v('f-exp')||dniData.data_exp||'').replace(/-/g,''),
+    (v('f-ap1')||'').toUpperCase(),
+    (v('f-ap2')||'').toUpperCase(),
+    (v('f-nom')||'').toUpperCase(),
+    v('f-sexe')||'',
+    v('f-naix').replace(/-/g,''),
+    (v('f-nac')||'ESP').toUpperCase(),
+    entFmt,
+    (v('f-hora-in')||'15:00').replace(':',''),
+    salFmt,
+    (v('f-hora-out')||'11:00').replace(':',''),
+    contractDate,
+    tipusContracte,
+    (v('f-reserva')||'').toUpperCase(),
+    v('f-nviat')||'1',
+    '1',
+    'N',
+    'PLATF',
+    telClean,
+    '',
+    v('f-email')||'',
+    (v('f-suport')||'').toUpperCase(),
+    v('f-adreca')||'',
+    isEsp ? (v('f-provincia')||'') : '',
+    isEsp ? (v('f-municipi')||'') : '',
+    isEsp ? '' : (v('f-loc')||''),
+    paisPostal,
+    v('f-cp')||''
   ];
+}
 
-  fileContent = linEstab + '\r\n' + campos.join('|');
+function validateStep3() {
+  hideErr('err-3');
+  if (!v('f-numdoc')||!v('f-ap1')||!v('f-nom')) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return false; }
+  if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
+  if (!v('f-tel') && !v('f-email')) { showErr('err-3','Es obligatorio indicar al menos teléfono o email del huésped.'); return false; }
+  if (new Date(v('f-salida')) <= new Date(v('f-entrada'))) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return false; }
+  const entFmt = v('f-entrada').replace(/-/g,'');
+  const tipusContracte = entFmt >= fmtDate(new Date()) ? 'R' : 'C';
+  const paisPostalRaw = (v('f-pais')||'ESP').toUpperCase();
+  const isEsp = paisPostalRaw === 'ESP';
+  if (tipusContracte === 'C') {
+    if (!v('f-adreca')) { showErr('err-3','La dirección postal es obligatoria para estancias en curso.'); return false; }
+    if (!v('f-cp')) { showErr('err-3','El código postal es obligatorio.'); return false; }
+    if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia (código INE) es obligatoria.'); return false; }
+    if (!isEsp && !v('f-loc')) { showErr('err-3','La localidad es obligatoria para huéspedes extranjeros.'); return false; }
+  }
+  return true;
+}
+
+function saveGuestAndNext() {
+  if (!validateStep3()) return;
+  guestsList.push(readCurrentGuest());
+  // Clear document fields only, keep stay + address for next guest
+  dniData = {};
+  ['f-tipo','f-numdoc','f-ap1','f-ap2','f-nom','f-sexe','f-naix','f-suport','f-exp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = el.tagName==='SELECT' ? el.options[0].value : ''; el.classList.remove('ai'); }
+  });
+  document.getElementById('doc-ai-badge').style.display='none';
+  capturedImage = null;
+  document.getElementById('preview-img').style.display='none';
+  document.getElementById('retake-btn').style.display='none';
+  document.getElementById('btn-extract-dni').disabled = true;
+  document.getElementById('cam-btns').style.display='flex';
+  updateGuestButtons();
+  goStep(2);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 4 — GENERATE FILE
+// ═══════════════════════════════════════════════════════════
+function generateFile() {
+  if (!validateStep3()) return;
+
+  const allGuests = [...guestsList, readCurrentGuest()];
+  const now = new Date();
+  const fconf = fmtDate(now);
+  const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, '0900', String(allGuests.length), 'V24'].join('|');
+
+  fileContent = linEstab + '\r\n' + allGuests.map(g => g.join('|')).join('\r\n');
 
   fileCounter++;
   localStorage.setItem('mc', fileCounter);
@@ -1196,6 +1225,8 @@ function generateFile() {
   const fname = `${ESTAB.id}.${seq}.txt`;
   document.getElementById('dl-fname').textContent = fname;
   document.getElementById('btn-dl').dataset.fname = fname;
+  document.querySelector('#step-4 .subtitle').textContent =
+    `${allGuests.length} huésped${allGuests.length>1?'es':''} registrado${allGuests.length>1?'s':''} correctamente.`;
 
   goStep(4);
 }
@@ -1248,7 +1279,7 @@ function fmtDate(d) { return d.getFullYear()+String(d.getMonth()+1).padStart(2,'
 function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0'); }
 
 function resetAll() {
-  dniData={}; airbnbData={}; capturedImage=null; fileContent='';
+  dniData={}; airbnbData={}; guestsList=[]; capturedImage=null; fileContent='';
   const emailEl = document.getElementById('airbnb-email'); if(emailEl) emailEl.value='';
   document.getElementById('airbnb-result').style.display='none';
   document.getElementById('btn-next-1').disabled=true;
