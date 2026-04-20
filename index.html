@@ -253,7 +253,7 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
       <div class="airbnb-row"><span>Código reserva</span><span id="ar-codigo">—</span></div>
       <div class="airbnb-row"><span>Check-in</span><span id="ar-entrada">—</span></div>
       <div class="airbnb-row"><span>Check-out</span><span id="ar-salida">—</span></div>
-      <div class="airbnb-row"><span>Huéspedes</span><span id="ar-num">—</span></div>
+      <div class="airbnb-row" style="display:none"><span>Huéspedes</span><span id="ar-num">—</span></div>
     </div>
 
     <div style="margin-top:10px">
@@ -269,10 +269,6 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
     <div id="guest-count-btns" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:28px 0;">
       <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(1,this)">1 persona</button>
       <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(2,this)">2 personas</button>
-      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(3,this)">3 personas</button>
-      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(4,this)">4 personas</button>
-      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(5,this)">5 personas</button>
-      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(6,this)">6 personas</button>
     </div>
     <button class="btn btn-out" onclick="goStep(1)">← Volver</button>
   </div>
