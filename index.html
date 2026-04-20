@@ -200,15 +200,9 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 
 <main>
 
-  <!-- API SETUP -->
-  <div class="setup-banner" id="api-banner">
-    <h3>⚙ Configuración inicial</h3>
-    <p>Introduce tu API key de Anthropic para activar la IA. Se guarda en este dispositivo y no se envía a ningún servidor.</p>
-    <div class="field">
-      <label>API Key de Anthropic</label>
-      <input type="password" id="api-key-inp" placeholder="sk-ant-api03-...">
-    </div>
-    <button class="btn btn-gold" style="margin-top:10px" onclick="saveKey()">Guardar y continuar</button>
+  <!-- API SETUP (hidden — key injected at build time) -->
+  <div id="api-banner" style="display:none">
+    <input type="hidden" id="api-key-inp">
   </div>
 
   <!-- ═══ PASO 1: AIRBNB iCAL ═══ -->
@@ -897,7 +891,7 @@ async function loadIcal(icalUrl) {
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <span style="font-size:12px;color:var(--gold);font-weight:500">${r.codigo || 'Reserva ' + (i+1)}</span>
-          <span style="font-size:11px;color:var(--text3)">${r.num_huespedes} huésped${r.num_huespedes>1?'es':''}</span>
+          <span style="font-size:11px;color:var(--text3)"></span>
         </div>
         <div style="font-size:13px;color:var(--text2)">
           Check-in: <span style="color:var(--text)">${r.entrada}</span>
