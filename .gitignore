@@ -1,4 +1,6 @@
-".env" 
-"node_modules/" 
-"mossos_error.png"
-"mossos_result.png"
+.env
+node_modules/
+*.png
+*.pdf
+ID50044239.*.txt
+local-test.html

@@ -1113,6 +1113,8 @@ Responde SOLO con JSON válido sin markdown:
 
   } catch(e) {
     showErr('err-2', 'No se pudo leer el documento: ' + e.message + '. Puedes introducir los datos manualmente.');
+    const reserva = v('f-reserva') || airbnbData.codigo || '—';
+    tgNotify(`⚠️ *Error IA — Check-in*\n📋 Reserva: \`${reserva}\`\n🔴 ${e.message}`);
     btn.textContent = 'Leer documento con IA →';
     btn.disabled = false;
   }
@@ -1342,6 +1344,17 @@ async function triggerMossosUpload(fname) {
   } catch(e) {
     console.warn('GitHub dispatch failed:', e.message);
   }
+}
+
+async function tgNotify(text) {
+  if (!_TG_TOKEN || _TG_TOKEN.startsWith('__')) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: _TG_CHAT, text, parse_mode:'Markdown' })
+    });
+  } catch(e) { console.warn('Telegram notify failed:', e.message); }
 }
 
 async function sendTelegramNotification(fname, blob) {
