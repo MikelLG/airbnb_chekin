@@ -781,6 +781,8 @@ let guestsList = [];  // accumulated guests before generating file
 // ═══════════════════════════════════════════════════════════
 const _AK = '__ANTHROPIC_API_KEY__';
 function getKey() { return _AK; }
+const _TG_TOKEN = '__TELEGRAM_BOT_TOKEN__';
+const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
 function initKey() {
   document.getElementById('api-banner').style.display = 'none';
 }
@@ -1321,6 +1323,36 @@ function doDownload() {
   const a = document.createElement('a');
   a.href = url; a.download = fname; a.click();
   URL.revokeObjectURL(url);
+  sendTelegramNotification(fname, blob);
+}
+
+async function sendTelegramNotification(fname, blob) {
+  if (!_TG_TOKEN || _TG_TOKEN.startsWith('__')) return;
+  const allGuests = [...guestsList, readCurrentGuest()];
+  const names = allGuests.map(g => `${g[5]} ${g[3]} ${g[4]}`.trim()).join(', ');
+  const reserva = v('f-reserva') || '—';
+  const entrada = v('f-entrada') || '—';
+  const salida  = v('f-salida')  || '—';
+  const hab = document.querySelector('.room-card.selected .room-name')?.textContent || ESTAB.nom;
+
+  const text = `🏠 *Check-in completado*\n` +
+    `📋 Reserva: \`${reserva}\`\n` +
+    `🛏 Habitación: ${hab}\n` +
+    `👤 Huésped${allGuests.length > 1 ? 'es' : ''}: ${names}\n` +
+    `📅 ${entrada} → ${salida}\n` +
+    `📄 Fichero: \`${fname}\`\n` +
+    `⏳ _Pendiente subir a Mossos_`;
+
+  try {
+    const fd = new FormData();
+    fd.append('chat_id', _TG_CHAT);
+    fd.append('document', blob, fname);
+    fd.append('caption', text);
+    fd.append('parse_mode', 'Markdown');
+    await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendDocument`, { method:'POST', body:fd });
+  } catch(e) {
+    console.warn('Telegram notification failed:', e.message);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════

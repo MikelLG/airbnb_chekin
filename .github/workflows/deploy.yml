@@ -30,17 +30,22 @@ jobs:
           API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ICAL_URL: ${{ secrets.AIRBNB_ICAL_URL }}
           ICAL_URL_2: ${{ secrets.AIRBNB_ICAL_URL_2 }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python3 -c "
           import os
-          api_key = os.environ.get('API_KEY', '')
-          ical_url = os.environ.get('ICAL_URL', '')
-          ical_url_2 = os.environ.get('ICAL_URL_2', '')
+          replacements = {
+            '__ANTHROPIC_API_KEY__': os.environ.get('API_KEY', ''),
+            '__ICAL_URL__': os.environ.get('ICAL_URL', ''),
+            '__ICAL_URL_2__': os.environ.get('ICAL_URL_2', ''),
+            '__TELEGRAM_BOT_TOKEN__': os.environ.get('TG_TOKEN', ''),
+            '__TELEGRAM_CHAT_ID__': os.environ.get('TG_CHAT', ''),
+          }
           with open('index.html', 'r') as f:
               content = f.read()
-          content = content.replace('__ANTHROPIC_API_KEY__', api_key)
-          content = content.replace('__ICAL_URL__', ical_url)
-          content = content.replace('__ICAL_URL_2__', ical_url_2)
+          for k, v in replacements.items():
+              content = content.replace(k, v)
           with open('index.html', 'w') as f:
               f.write(content)
           print('Secrets injected OK')
@@ -48,7 +53,7 @@ jobs:
 
       - name: Verify injection
         run: |
-          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__\|__ICAL_URL_2__' index.html; then
+          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__\|__ICAL_URL_2__\|__TELEGRAM' index.html; then
             echo "ERROR: placeholders still present!"
             exit 1
           else

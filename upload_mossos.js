@@ -8,9 +8,50 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
+const REGISTROS_DIR = path.join(require('os').homedir(), 'Documents', 'Mossos_Registros');
+if (!fs.existsSync(REGISTROS_DIR)) fs.mkdirSync(REGISTROS_DIR, { recursive: true });
+
 const MOSSOS_LOGIN_URL = 'https://registreviatgers.mossos.gencat.cat/mossos_hotels/AppJava/login.do';
 const USER = process.env.MOSSOS_USER;
 const PASS = process.env.MOSSOS_PASS;
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TG_CHAT  = process.env.TELEGRAM_CHAT_ID;
+
+async function tg(text, filePath) {
+  if (!TG_TOKEN || !TG_CHAT) return;
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      const FormData = require('form-data');
+      const fd = new FormData();
+      fd.append('chat_id', TG_CHAT);
+      fd.append('document', fs.createReadStream(filePath));
+      fd.append('caption', text);
+      fd.append('parse_mode', 'Markdown');
+      const https = require('https');
+      await new Promise((resolve, reject) => {
+        const req = https.request(`https://api.telegram.org/bot${TG_TOKEN}/sendDocument`,
+          { method:'POST', headers: fd.getHeaders() },
+          res => { res.resume(); res.on('end', resolve); }
+        );
+        req.on('error', reject);
+        fd.pipe(req);
+      });
+    } else {
+      const https = require('https');
+      const body = JSON.stringify({ chat_id: TG_CHAT, text, parse_mode: 'Markdown' });
+      await new Promise((resolve, reject) => {
+        const req = https.request('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage',
+          { method:'POST', headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)} },
+          res => { res.resume(); res.on('end', resolve); }
+        );
+        req.on('error', reject);
+        req.write(body); req.end();
+      });
+    }
+  } catch(e) {
+    console.warn('Telegram error:', e.message);
+  }
+}
 
 async function uploadToMossos(filePath) {
   const absPath = path.resolve(filePath);
@@ -23,8 +64,13 @@ async function uploadToMossos(filePath) {
     process.exit(1);
   }
 
+  const baseName = path.basename(absPath, '.txt');
+  const registroTxt = path.join(REGISTROS_DIR, path.basename(absPath));
+  fs.copyFileSync(absPath, registroTxt);
+
   console.log(`\n🤖 Robot Mossos iniciando...`);
   console.log(`📄 Fichero: ${path.basename(absPath)}`);
+  console.log(`📁 Guardado en registros/`);
 
   const browser = await chromium.launch({ headless: false, slowMo: 600 });
   const page = await browser.newPage();
@@ -93,22 +139,29 @@ async function uploadToMossos(filePath) {
     if (result.includes('èxit') || result.includes('correctament') || result.includes('éxito') || result.includes('correcta')) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
       const comprovant = page.locator('a:has-text("comprovant"), a:has-text("Descarregar"), a:has-text("comprobante")');
+      let pdfPath = null;
       if (await comprovant.count() > 0) {
         const [download] = await Promise.all([
           page.waitForEvent('download'),
           comprovant.first().click()
         ]);
-        const savePath = path.join(path.dirname(absPath), 'comprovant_' + path.basename(absPath, '.txt') + '.pdf');
-        await download.saveAs(savePath);
-        console.log(`   📥 Comprovant guardado: ${path.basename(savePath)}`);
+        pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
+        await download.saveAs(pdfPath);
+        console.log(`   📥 Comprovant guardado: ${path.basename(pdfPath)}`);
       }
+      await tg(
+        `✅ *Mossos — Subida correcta*\n📄 \`${path.basename(absPath)}\`\n📥 Comprovant adjunto`,
+        pdfPath
+      );
     } else {
       console.log('\n⚠️  No se pudo confirmar. Ver mossos_result.png');
+      await tg(`⚠️ *Mossos — Sin confirmación*\n📄 \`${path.basename(absPath)}\`\nRevisa mossos_result.png`);
     }
 
   } catch (err) {
     console.error(`\n❌ Error: ${err.message}`);
     await page.screenshot({ path: 'mossos_error.png' }).catch(() => {});
+    await tg(`❌ *Mossos — Error*\n📄 \`${path.basename(absPath)}\`\n🔴 ${err.message}`);
   } finally {
     await page.waitForTimeout(2000);
     await browser.close();
