@@ -12,10 +12,33 @@ const REGISTROS_DIR = path.join(require('os').homedir(), 'Documents', 'Mossos_Re
 if (!fs.existsSync(REGISTROS_DIR)) fs.mkdirSync(REGISTROS_DIR, { recursive: true });
 
 const MOSSOS_LOGIN_URL = 'https://registreviatgers.mossos.gencat.cat/mossos_hotels/AppJava/login.do';
-const USER = process.env.MOSSOS_USER;
-const PASS = process.env.MOSSOS_PASS;
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TG_CHAT  = process.env.TELEGRAM_CHAT_ID;
+const USER       = process.env.MOSSOS_USER;
+const PASS       = process.env.MOSSOS_PASS;
+const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN;
+const TG_CHAT    = process.env.TELEGRAM_CHAT_ID;
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD;
+
+async function sendEmail(subject, text, attachments = []) {
+  if (!GMAIL_USER || !GMAIL_PASS) return;
+  try {
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: GMAIL_USER, pass: GMAIL_PASS }
+    });
+    await transporter.sendMail({
+      from: `Anika's House <${GMAIL_USER}>`,
+      to: GMAIL_USER,
+      subject,
+      text,
+      attachments: attachments.filter(a => a.path && fs.existsSync(a.path))
+    });
+    console.log('   📧 Email enviado a', GMAIL_USER);
+  } catch(e) {
+    console.warn('Email error:', e.message);
+  }
+}
 
 async function tg(text, filePath) {
   if (!TG_TOKEN || !TG_CHAT) return;
@@ -139,19 +162,26 @@ async function uploadToMossos(filePath) {
         await download.saveAs(pdfPath);
         console.log(`   📥 Comprovant guardado: ${path.basename(pdfPath)}`);
       }
-      await tg(
-        `✅ *Mossos — Subida correcta*\n📄 \`${path.basename(absPath)}\`\n📥 Comprovant adjunto`,
-        pdfPath
+      await tg(`✅ *Mossos — Subida correcta*\n📄 \`${path.basename(absPath)}\`\n📥 Comprovant adjunto`, pdfPath);
+      await sendEmail(
+        `✅ Mossos — ${path.basename(absPath)}`,
+        `Fichero subido correctamente a Mossos.\n\nFichero: ${path.basename(absPath)}\nFecha: ${new Date().toLocaleString('es-ES')}`,
+        [
+          { filename: path.basename(absPath), path: absPath },
+          ...(pdfPath ? [{ filename: path.basename(pdfPath), path: pdfPath }] : [])
+        ]
       );
     } else {
       console.log('\n⚠️  No se pudo confirmar. Ver mossos_result.png');
       await tg(`⚠️ *Mossos — Sin confirmación*\n📄 \`${path.basename(absPath)}\`\nRevisa mossos_result.png`);
+      await sendEmail(`⚠️ Mossos — Sin confirmación`, `No se pudo confirmar la subida.\n\nFichero: ${path.basename(absPath)}`);
     }
 
   } catch (err) {
     console.error(`\n❌ Error: ${err.message}`);
     await page.screenshot({ path: 'mossos_error.png' }).catch(() => {});
     await tg(`❌ *Mossos — Error*\n📄 \`${path.basename(absPath)}\`\n🔴 ${err.message}`);
+    await sendEmail(`❌ Mossos — Error`, `Error al subir fichero.\n\nFichero: ${path.basename(absPath)}\nError: ${err.message}`);
   } finally {
     await page.waitForTimeout(2000);
     await browser.close();
