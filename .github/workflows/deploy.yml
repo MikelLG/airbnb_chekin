@@ -32,6 +32,7 @@ jobs:
           ICAL_URL_2: ${{ secrets.AIRBNB_ICAL_URL_2 }}
           TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_PAT: ${{ secrets.GH_DISPATCH_PAT }}
         run: |
           python3 -c "
           import os
@@ -41,6 +42,7 @@ jobs:
             '__ICAL_URL_2__': os.environ.get('ICAL_URL_2', ''),
             '__TELEGRAM_BOT_TOKEN__': os.environ.get('TG_TOKEN', ''),
             '__TELEGRAM_CHAT_ID__': os.environ.get('TG_CHAT', ''),
+            '__GH_DISPATCH_PAT__': os.environ.get('GH_PAT', ''),
           }
           with open('index.html', 'r') as f:
               content = f.read()
@@ -53,7 +55,7 @@ jobs:
 
       - name: Verify injection
         run: |
-          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__\|__ICAL_URL_2__\|__TELEGRAM' index.html; then
+          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__\|__ICAL_URL_2__\|__TELEGRAM\|__GH_DISPATCH' index.html; then
             echo "ERROR: placeholders still present!"
             exit 1
           else

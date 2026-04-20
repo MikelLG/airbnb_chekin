@@ -783,6 +783,7 @@ const _AK = '__ANTHROPIC_API_KEY__';
 function getKey() { return _AK; }
 const _TG_TOKEN = '__TELEGRAM_BOT_TOKEN__';
 const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
+const _GH_PAT   = '__GH_DISPATCH_PAT__';
 function initKey() {
   document.getElementById('api-banner').style.display = 'none';
 }
@@ -1324,6 +1325,29 @@ function doDownload() {
   a.href = url; a.download = fname; a.click();
   URL.revokeObjectURL(url);
   sendTelegramNotification(fname, blob);
+  triggerMossosUpload(fname);
+}
+
+async function triggerMossosUpload(fname) {
+  if (!_GH_PAT || _GH_PAT.startsWith('__')) return;
+  try {
+    const content = btoa(unescape(encodeURIComponent(fileContent)));
+    await fetch('https://api.github.com/repos/MikelLG/airbnb_chekin/dispatches', {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${_GH_PAT}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        event_type: 'mossos-upload',
+        client_payload: { filename: fname, content }
+      })
+    });
+    console.log('GitHub Actions upload triggered');
+  } catch(e) {
+    console.warn('GitHub dispatch failed:', e.message);
+  }
 }
 
 async function sendTelegramNotification(fname, blob) {

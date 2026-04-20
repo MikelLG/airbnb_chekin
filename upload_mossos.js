@@ -21,31 +21,20 @@ async function tg(text, filePath) {
   if (!TG_TOKEN || !TG_CHAT) return;
   try {
     if (filePath && fs.existsSync(filePath)) {
-      const FormData = require('form-data');
+      // Send file as document using multipart (Node 18+ native fetch + FormData)
+      const { FormData, File } = await import('undici').catch(() => globalThis);
       const fd = new FormData();
-      fd.append('chat_id', TG_CHAT);
-      fd.append('document', fs.createReadStream(filePath));
-      fd.append('caption', text);
-      fd.append('parse_mode', 'Markdown');
-      const https = require('https');
-      await new Promise((resolve, reject) => {
-        const req = https.request(`https://api.telegram.org/bot${TG_TOKEN}/sendDocument`,
-          { method:'POST', headers: fd.getHeaders() },
-          res => { res.resume(); res.on('end', resolve); }
-        );
-        req.on('error', reject);
-        fd.pipe(req);
-      });
+      fd.set('chat_id', TG_CHAT);
+      fd.set('caption', text);
+      fd.set('parse_mode', 'Markdown');
+      const fileBytes = fs.readFileSync(filePath);
+      fd.set('document', new Blob([fileBytes]), path.basename(filePath));
+      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendDocument`, { method:'POST', body:fd });
     } else {
-      const https = require('https');
-      const body = JSON.stringify({ chat_id: TG_CHAT, text, parse_mode: 'Markdown' });
-      await new Promise((resolve, reject) => {
-        const req = https.request('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage',
-          { method:'POST', headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)} },
-          res => { res.resume(); res.on('end', resolve); }
-        );
-        req.on('error', reject);
-        req.write(body); req.end();
+      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id: TG_CHAT, text, parse_mode: 'Markdown' })
       });
     }
   } catch(e) {
@@ -72,7 +61,8 @@ async function uploadToMossos(filePath) {
   console.log(`📄 Fichero: ${path.basename(absPath)}`);
   console.log(`📁 Guardado en registros/`);
 
-  const browser = await chromium.launch({ headless: false, slowMo: 600 });
+  const isCI = process.env.CI === 'true';
+  const browser = await chromium.launch({ headless: isCI, slowMo: isCI ? 0 : 600 });
   const page = await browser.newPage();
 
   try {

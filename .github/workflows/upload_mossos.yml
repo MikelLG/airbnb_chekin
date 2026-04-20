@@ -1,0 +1,44 @@
+name: Upload to Mossos
+
+on:
+  repository_dispatch:
+    types: [mossos-upload]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium --with-deps
+
+      - name: Write .txt file
+        run: |
+          echo "${{ github.event.client_payload.content }}" | base64 -d > "${{ github.event.client_payload.filename }}"
+
+      - name: Run upload robot
+        env:
+          CI: 'true'
+          MOSSOS_USER: ${{ secrets.MOSSOS_USER }}
+          MOSSOS_PASS: ${{ secrets.MOSSOS_PASS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node upload_mossos.js "${{ github.event.client_payload.filename }}"
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mossos-screenshots
+          path: "*.png"
