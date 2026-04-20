@@ -311,9 +311,12 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
           <button class="retake-btn" id="retake-front" onclick="retakeSide('front')" style="display:none">↺</button>
         </div>
         <div class="side-btns">
-          <button class="btn btn-dark" style="font-size:12px;padding:8px 10px" onclick="startCameraSide('front')">📷 Cámara</button>
+          <label class="btn btn-dark" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
+            📷 Cámara
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFileSide(this.files[0],'front');this.value=''">
+          </label>
           <label class="btn btn-out" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
-            ⬆ Subir
+            ⬆ Galería
             <input type="file" accept="image/*" style="display:none" onchange="handleFileSide(this.files[0],'front');this.value=''">
           </label>
         </div>
@@ -328,9 +331,12 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
           <button class="retake-btn" id="retake-back" onclick="retakeSide('back')" style="display:none">↺</button>
         </div>
         <div class="side-btns">
-          <button class="btn btn-dark" style="font-size:12px;padding:8px 10px" onclick="startCameraSide('back')">📷 Cámara</button>
+          <label class="btn btn-dark" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
+            📷 Cámara
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFileSide(this.files[0],'back');this.value=''">
+          </label>
           <label class="btn btn-out" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
-            ⬆ Subir
+            ⬆ Galería
             <input type="file" accept="image/*" style="display:none" onchange="handleFileSide(this.files[0],'back');this.value=''">
           </label>
         </div>
