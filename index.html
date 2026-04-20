@@ -115,6 +115,13 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 .btn-out:hover{border-color:var(--text2);color:var(--text);}
 .guest-num-btn{font-size:16px;padding:14px 22px;min-width:110px;}
 .guest-num-btn.selected{border-color:var(--gold);color:var(--gold);}
+.doc-side-zone{flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;}
+.doc-side-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
+.doc-placeholder{font-size:40px;color:var(--border2);width:100%;text-align:center;padding:16px 0;}
+.side-btns{display:flex;gap:8px;width:100%;margin-top:4px;}
+.side-btns .btn{flex:1;text-align:center;}
+.doc-side-zone.has-img{border-color:var(--green);}
+.cam-wrap{margin-bottom:8px;}
 .btn-dark{background:var(--bg3);color:var(--text);border:1px solid var(--border2);}
 .btn-dark:hover{border-color:var(--gold);}
 
@@ -280,46 +287,67 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
   <div class="step" id="step-2">
     <div class="eyebrow">Paso 2 de 4</div>
     <div class="title" id="step2-title">Foto del documento</div>
-    <div class="subtitle" id="step2-subtitle">Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.</div>
+    <div class="subtitle" id="step2-subtitle">Haz una foto a las dos caras del DNI o pasaporte. La IA leerá los datos automáticamente.</div>
 
     <div class="err" id="err-2"></div>
     <div class="info">🔒 Tus datos se usan exclusivamente para el registro legal obligatorio (RD 933/2021). No se almacenan en ningún servidor.</div>
 
-    <!-- Camera mode -->
-    <div id="cam-section">
-      <div class="cam-wrap" id="cam-wrap" style="display:none">
-        <video id="vid" autoplay playsinline muted></video>
-        <canvas id="snap-canvas"></canvas>
-        <div class="cam-overlay">
-          <div class="doc-frame"></div>
-          <div class="cam-tip">Centra el documento dentro del marco</div>
+    <!-- Shared camera viewfinder -->
+    <div class="cam-wrap" id="cam-wrap" style="display:none">
+      <video id="vid" autoplay playsinline muted></video>
+      <canvas id="snap-canvas"></canvas>
+      <div class="cam-overlay">
+        <div class="doc-frame"></div>
+        <div class="cam-tip" id="cam-tip">Centra el documento dentro del marco</div>
+      </div>
+      <div class="corner c-tl"></div>
+      <div class="corner c-tr"></div>
+      <div class="corner c-bl"></div>
+      <div class="corner c-br"></div>
+    </div>
+    <div id="shutter-btn" style="display:none;gap:10px;margin-bottom:12px">
+      <button class="btn btn-gold" onclick="takePicture()">📸 Hacer foto</button>
+      <button class="btn btn-out" onclick="stopCamera()">Cancelar</button>
+    </div>
+
+    <!-- Two side-by-side capture zones -->
+    <div style="display:flex;gap:12px;margin-top:10px">
+      <!-- FRONT -->
+      <div class="doc-side-zone" id="zone-front">
+        <div class="doc-side-label">Cara delantera <span class="req">*</span></div>
+        <div class="preview-box" style="margin:8px 0">
+          <img id="preview-front" alt="Cara delantera" style="display:none">
+          <div id="placeholder-front" class="doc-placeholder">📄</div>
+          <button class="retake-btn" id="retake-front" onclick="retakeSide('front')" style="display:none">↺</button>
         </div>
-        <div class="corner c-tl"></div>
-        <div class="corner c-tr"></div>
-        <div class="corner c-bl"></div>
-        <div class="corner c-br"></div>
-      </div>
-
-      <div class="preview-box">
-        <img id="preview-img" alt="Documento capturado">
-        <button class="retake-btn" id="retake-btn" onclick="retake()" style="display:none">↺ Repetir</button>
-      </div>
-
-      <div class="cam-btns" id="cam-btns">
-        <button class="btn btn-dark" onclick="startCamera()">📷 Abrir cámara</button>
-        <div class="upload-zone" style="flex:1;padding:15px;margin-bottom:0" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-          <input type="file" accept="image/*" onchange="handleFile(this.files[0])">
-          <div style="font-size:13px;color:var(--text2)">⬆ Subir foto</div>
+        <div class="side-btns">
+          <button class="btn btn-dark" style="font-size:12px;padding:8px 10px" onclick="startCameraSide('front')">📷 Cámara</button>
+          <label class="btn btn-out" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
+            ⬆ Subir
+            <input type="file" accept="image/*" style="display:none" onchange="handleFileSide(this.files[0],'front');this.value=''">
+          </label>
         </div>
       </div>
 
-      <div id="shutter-btn" style="display:none">
-        <button class="btn btn-gold" onclick="takePicture()">📸 Hacer foto</button>
-        <button class="btn btn-out" onclick="stopCamera()">Cancelar</button>
+      <!-- BACK -->
+      <div class="doc-side-zone" id="zone-back">
+        <div class="doc-side-label">Cara trasera <span style="font-size:10px;color:var(--text3)">(opcional)</span></div>
+        <div class="preview-box" style="margin:8px 0">
+          <img id="preview-back" alt="Cara trasera" style="display:none">
+          <div id="placeholder-back" class="doc-placeholder">📄</div>
+          <button class="retake-btn" id="retake-back" onclick="retakeSide('back')" style="display:none">↺</button>
+        </div>
+        <div class="side-btns">
+          <button class="btn btn-dark" style="font-size:12px;padding:8px 10px" onclick="startCameraSide('back')">📷 Cámara</button>
+          <label class="btn btn-out" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
+            ⬆ Subir
+            <input type="file" accept="image/*" style="display:none" onchange="handleFileSide(this.files[0],'back');this.value=''">
+          </label>
+        </div>
       </div>
     </div>
 
-    <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:12px">Leer documento con IA →</button>
+    <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:16px">Leer documento con IA →</button>
     <button class="btn btn-out" onclick="fillStep3();goStep(3)">Saltar, introducir manualmente</button>
     <button class="btn btn-out" style="margin-top:4px" onclick="goStepGuests()">← Volver</button>
   </div>
@@ -739,8 +767,10 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 const ESTAB = { id: 'ID50044239', nom: "ANIKA'S HOUSE" };
 let fileCounter = parseInt(localStorage.getItem('mc') || '0');
 let fileContent = '';
-let capturedImage = null; // base64
+let capturedImage = null;
 let capturedMime = 'image/jpeg';
+let capturedImageBack = null;
+let capturedMimeBack = 'image/jpeg';
 let stream = null;
 let airbnbData = {};
 let dniData = {};
@@ -974,18 +1004,21 @@ function skipAirbnb() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 2 — CAMERA
+// STEP 2 — CAMERA (front + back)
 // ═══════════════════════════════════════════════════════════
-async function startCamera() {
+let currentCaptureSide = 'front';
+
+async function startCameraSide(side) {
+  currentCaptureSide = side;
+  document.getElementById('cam-tip').textContent =
+    side === 'front' ? 'Cara delantera — centra el documento' : 'Cara trasera — centra el documento';
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width:{ideal:1920}, height:{ideal:1080} }
     });
-    const vid = document.getElementById('vid');
-    vid.srcObject = stream;
+    document.getElementById('vid').srcObject = stream;
     document.getElementById('cam-wrap').style.display = 'block';
-    document.getElementById('cam-btns').style.display = 'none';
-    document.getElementById('shutter-btn').style.display = 'block';
+    document.getElementById('shutter-btn').style.display = 'flex';
   } catch(e) {
     showErr('err-2', 'No se pudo acceder a la cámara. Puedes subir una foto directamente.');
   }
@@ -994,7 +1027,6 @@ async function startCamera() {
 function stopCamera() {
   if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
   document.getElementById('cam-wrap').style.display = 'none';
-  document.getElementById('cam-btns').style.display = 'flex';
   document.getElementById('shutter-btn').style.display = 'none';
 }
 
@@ -1004,53 +1036,52 @@ function takePicture() {
   canvas.width = vid.videoWidth;
   canvas.height = vid.videoHeight;
   canvas.getContext('2d').drawImage(vid, 0, 0);
-  capturedImage = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
-  capturedMime = 'image/jpeg';
-
-  const img = document.getElementById('preview-img');
-  img.src = 'data:image/jpeg;base64,' + capturedImage;
-  img.style.display = 'block';
-  document.getElementById('retake-btn').style.display = 'block';
-  document.getElementById('btn-extract-dni').disabled = false;
+  const b64 = canvas.toDataURL('image/jpeg', 0.92);
+  setSideImage(currentCaptureSide, b64.split(',')[1], 'image/jpeg', b64);
   stopCamera();
 }
 
-function retake() {
-  capturedImage = null;
-  document.getElementById('preview-img').style.display = 'none';
-  document.getElementById('retake-btn').style.display = 'none';
-  document.getElementById('btn-extract-dni').disabled = true;
-  document.getElementById('cam-btns').style.display = 'flex';
-}
-
-function handleFile(file) {
+function handleFileSide(file, side) {
   if (!file) return;
-  capturedMime = file.type || 'image/jpeg';
+  const mime = file.type || 'image/jpeg';
   const reader = new FileReader();
-  reader.onload = e => {
-    capturedImage = e.target.result.split(',')[1];
-    const img = document.getElementById('preview-img');
-    img.src = e.target.result;
-    img.style.display = 'block';
-    document.getElementById('retake-btn').style.display = 'block';
-    document.getElementById('btn-extract-dni').disabled = false;
-    document.getElementById('cam-btns').style.display = 'none';
-  };
+  reader.onload = e => setSideImage(side, e.target.result.split(',')[1], mime, e.target.result);
   reader.readAsDataURL(file);
 }
 
-function handleDrop(e) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
+function setSideImage(side, b64, mime, src) {
+  if (side === 'front') {
+    capturedImage = b64;
+    capturedMime = mime;
+  } else {
+    capturedImageBack = b64;
+    capturedMimeBack = mime;
+  }
+  const img = document.getElementById('preview-' + side);
+  img.src = src;
+  img.style.display = 'block';
+  document.getElementById('placeholder-' + side).style.display = 'none';
+  document.getElementById('retake-' + side).style.display = 'block';
+  document.getElementById('zone-' + side).classList.add('has-img');
+  document.getElementById('btn-extract-dni').disabled = !capturedImage;
+}
+
+function retakeSide(side) {
+  if (side === 'front') { capturedImage = null; capturedMime = null; }
+  else { capturedImageBack = null; capturedMimeBack = null; }
+  document.getElementById('preview-' + side).style.display = 'none';
+  document.getElementById('preview-' + side).src = '';
+  document.getElementById('placeholder-' + side).style.display = 'block';
+  document.getElementById('retake-' + side).style.display = 'none';
+  document.getElementById('zone-' + side).classList.remove('has-img');
+  document.getElementById('btn-extract-dni').disabled = !capturedImage;
 }
 
 // ═══════════════════════════════════════════════════════════
 // STEP 2 — DNI OCR
 // ═══════════════════════════════════════════════════════════
 async function extractDNI() {
-  if (!capturedImage) { showErr('err-2','Primero haz o sube una foto del documento.'); return; }
+  if (!capturedImage) { showErr('err-2','Primero haz o sube una foto de la cara delantera.'); return; }
   if (!getKey()) { showErr('err-2','Guarda tu API key primero.'); return; }
 
   hideErr('err-2');
@@ -1058,14 +1089,13 @@ async function extractDNI() {
   btn.textContent = 'Leyendo documento...';
   btn.disabled = true;
 
-  try {
-    const res = await callClaudeVision(capturedImage, capturedMime,
-`Analiza este documento de identidad y extrae todos los datos visibles.
+  const prompt =
+`Analiza ${capturedImageBack ? 'estas dos imágenes (cara delantera y trasera)' : 'esta imagen'} de un documento de identidad y extrae todos los datos visibles.
 Responde SOLO con JSON válido sin markdown:
 {
   "tipus_doc": "D para DNI/NIF español, P para Pasaporte, N para NIE, O para otros",
   "num_doc": "número del documento sin espacios en mayúsculas",
-  "num_suport": "número de soporte si es DNI español exactamente 9 caracteres, si no vacío",
+  "num_suport": "número de soporte si es DNI español exactamente 9 caracteres (está en la cara trasera del DNI), si no vacío",
   "primer_cognom": "primer apellido en mayúsculas",
   "segon_cognom": "segundo apellido en mayúsculas o vacío si no tiene",
   "nom": "nombre en mayúsculas",
@@ -1073,7 +1103,12 @@ Responde SOLO con JSON válido sin markdown:
   "data_naix": "fecha nacimiento YYYYMMDD",
   "data_exp": "fecha expedición YYYYMMDD o vacío",
   "pais": "código ISO-3 del país de nacionalidad ESP FRA GBR DEU ITA USA RUS etc"
-}`);
+}`;
+
+  try {
+    const images = [{ b64: capturedImage, mime: capturedMime }];
+    if (capturedImageBack) images.push({ b64: capturedImageBack, mime: capturedMimeBack });
+    const res = await callClaudeVisionMulti(images, prompt);
 
     dniData = JSON.parse(res.replace(/```json|```/g,'').trim());
     fillStep3();
@@ -1241,11 +1276,15 @@ function saveGuestAndNext() {
     if (el) { el.value = el.tagName==='SELECT' ? el.options[0].value : ''; el.classList.remove('ai'); }
   });
   document.getElementById('doc-ai-badge').style.display='none';
-  capturedImage = null;
-  document.getElementById('preview-img').style.display='none';
-  document.getElementById('retake-btn').style.display='none';
+  capturedImage = null; capturedImageBack = null;
+  ['front','back'].forEach(side => {
+    document.getElementById('preview-'+side).style.display='none';
+    document.getElementById('preview-'+side).src='';
+    document.getElementById('placeholder-'+side).style.display='block';
+    document.getElementById('retake-'+side).style.display='none';
+    document.getElementById('zone-'+side).classList.remove('has-img');
+  });
   document.getElementById('btn-extract-dni').disabled = true;
-  document.getElementById('cam-btns').style.display='flex';
   updateGuestButtons();
   goStep(2);
 }
@@ -1303,14 +1342,12 @@ async function callClaude(messages) {
   return d.content[0].text;
 }
 
-async function callClaudeVision(b64, mime, prompt) {
-  return callClaude([{
-    role:'user',
-    content:[
-      { type:'image', source:{ type:'base64', media_type:mime, data:b64 } },
-      { type:'text', text:prompt }
-    ]
-  }]);
+async function callClaudeVisionMulti(images, prompt) {
+  const content = images.map(img => ({
+    type:'image', source:{ type:'base64', media_type:img.mime, data:img.b64 }
+  }));
+  content.push({ type:'text', text:prompt });
+  return callClaude([{ role:'user', content }]);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1323,14 +1360,18 @@ function fmtDate(d) { return d.getFullYear()+String(d.getMonth()+1).padStart(2,'
 function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0'); }
 
 function resetAll() {
-  dniData={}; airbnbData={}; guestsList=[]; capturedImage=null; fileContent='';
+  dniData={}; airbnbData={}; guestsList=[]; capturedImage=null; capturedImageBack=null; fileContent='';
   const emailEl = document.getElementById('airbnb-email'); if(emailEl) emailEl.value='';
   document.getElementById('airbnb-result').style.display='none';
   document.getElementById('btn-next-1').disabled=true;
-  document.getElementById('preview-img').style.display='none';
-  document.getElementById('retake-btn').style.display='none';
+  ['front','back'].forEach(side => {
+    document.getElementById('preview-'+side).style.display='none';
+    document.getElementById('preview-'+side).src='';
+    document.getElementById('placeholder-'+side).style.display='block';
+    document.getElementById('retake-'+side).style.display='none';
+    document.getElementById('zone-'+side).classList.remove('has-img');
+  });
   document.getElementById('btn-extract-dni').disabled=true;
-  document.getElementById('cam-btns').style.display='flex';
   document.querySelectorAll('input,select,textarea').forEach(el=>{
     if(el.id==='api-key-inp'||el.id==='f-nviat'||el.id==='f-hora-in'||el.id==='f-hora-out') return;
     if(el.type!=='button') el.value='';
