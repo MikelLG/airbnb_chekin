@@ -117,9 +117,3 @@ print('OK')
 ```
 Clic derecho en `local-test.html` → Open with Live Server.
 
----
-
-## Pendiente
-
-- [ ] Cloudflare Worker desplegado para CORS (iCal Habitación 2 puede fallar sin él)
-- [ ] Renombrar "Habitación 1" / "Habitación 2" con los nombres reales en `index.html`
