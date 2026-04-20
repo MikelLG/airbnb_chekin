@@ -12,17 +12,21 @@ Portal web de check-in para huéspedes de Airbnb con envío automático al regis
 
 ---
 
-## Flujo completo
+## Flujo completo (automático)
 
 ```
 Huésped abre el portal
   → Selecciona habitación (Hab 1 o Hab 2)
   → Se cargan las reservas del iCal de Airbnb
   → Selecciona su reserva
-  → Foto del DNI/pasaporte (IA extrae los datos)
+  → Indica cuántas personas hay en la reserva
+  → Foto delantera + trasera del DNI/pasaporte de cada persona (IA extrae los datos)
   → Revisa y completa datos + dirección postal
   → Descarga el fichero .txt
-  → Tú subes el .txt a Mossos (30 seg) o lo sube el robot automáticamente
+      → Telegram: te llega notificación + fichero .txt adjunto
+      → GitHub Actions: arranca robot automáticamente
+          → Sube el .txt a Mossos
+          → Telegram: te llega el PDF comprobante
 ```
 
 ---
@@ -32,66 +36,69 @@ Huésped abre el portal
 | Archivo | Qué hace |
 |---------|----------|
 | `index.html` | Portal web del huésped (GitHub Pages) |
-| `mossos_generator.py` | Genera el .txt manualmente desde terminal |
-| `upload_mossos.js` | Robot que sube el .txt a Mossos automáticamente |
-| `cloudflare-worker.js` | Proxy CORS para cargar iCal de Airbnb (deploy en Cloudflare) |
+| `upload_mossos.js` | Robot que sube el .txt a Mossos (corre en GitHub Actions) |
+| `mossos_generator.py` | Genera el .txt manualmente desde terminal (backup) |
+| `cloudflare-worker.js` | Proxy CORS para cargar iCal de Airbnb (pendiente deploy) |
 | `.env` | Credenciales locales (nunca sube a GitHub) |
 | `.github/workflows/deploy.yml` | CI/CD — inyecta secrets y despliega a GitHub Pages |
+| `.github/workflows/upload_mossos.yml` | Se dispara automáticamente al recibir un nuevo .txt |
 
 ---
 
 ## .env (local)
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-MOSSOS_USER=ID50044239
-MOSSOS_PASS=tu_password
-AIRBNB_ICAL_URL=https://www.airbnb.es/calendar/ical/50050101.ics?t=...
-AIRBNB_ICAL_URL_2=https://www.airbnb.es/calendar/ical/50886202.ics?t=...
+MOSSOS_USER=<usuario mossos>
+MOSSOS_PASS=<contraseña mossos>
+TELEGRAM_BOT_TOKEN=<token del bot>
+TELEGRAM_CHAT_ID=<chat id del grupo>
 ```
 
 ---
 
-## GitHub Secrets (para el deploy)
+## GitHub Secrets (todos configurados)
 
-Configurados en repo → Settings → Secrets → Actions:
-
-- `ANTHROPIC_API_KEY`
-- `AIRBNB_ICAL_URL` — iCal Habitación 1
-- `AIRBNB_ICAL_URL_2` — iCal Habitación 2
+| Secret | Descripción |
+|--------|-------------|
+| `ANTHROPIC_API_KEY` | API key de Claude (IA para leer DNIs) |
+| `AIRBNB_ICAL_URL` | iCal Habitación 1 |
+| `AIRBNB_ICAL_URL_2` | iCal Habitación 2 |
+| `TELEGRAM_BOT_TOKEN` | Token del bot @AirbnbCheckinBot |
+| `TELEGRAM_CHAT_ID` | ID del grupo de Telegram (número negativo) |
+| `GH_DISPATCH_PAT` | Personal Access Token para disparar GitHub Actions |
+| `MOSSOS_USER` | Usuario Mossos |
+| `MOSSOS_PASS` | Contraseña Mossos |
 
 ---
 
 ## Uso diario
 
-### Opción A — El huésped lo hace solo
+### Opción A — Automático (recomendado)
 Manda este mensaje por Airbnb antes del check-in:
 > "Para completar tu check-in, accede a: https://mikellg.github.io/airbnb_chekin/"
 
-El huésped descarga el `.txt` y tú lo subes a Mossos.
+El huésped completa el portal → todo lo demás es automático.
 
-### Opción B — Generar .txt manualmente
-```powershell
-cd C:\Users\Mikel\Documents\airbnb_chekin
-python mossos_generator.py
-```
-
-### Opción C — Subir .txt a Mossos automáticamente (robot)
+### Opción B — Subir .txt manualmente al robot local
 ```powershell
 cd C:\Users\Mikel\Documents\airbnb_chekin
 node upload_mossos.js ID50044239.001.txt
+```
+
+### Opción C — Generar .txt desde terminal
+```powershell
+cd C:\Users\Mikel\Documents\airbnb_chekin
+python mossos_generator.py
 ```
 
 ---
 
 ## Test local del portal
 
-**Click derecho en index.html y live server.**
+Genera `local-test.html` con los secrets inyectados y ábrelo con Live Server:
 
 ```powershell
 cd C:\Users\Mikel\Documents\airbnb_chekin
-
-# Genera local-test.html con los secrets inyectados
 python3 -c "
 import os
 def load_env():
@@ -102,23 +109,17 @@ def load_env():
                 k,v=line.split('=',1); os.environ[k.strip()]=v.strip()
 load_env()
 with open('index.html') as f: html=f.read()
-html=html.replace('__ANTHROPIC_API_KEY__',os.environ.get('ANTHROPIC_API_KEY',''))
-html=html.replace('__ICAL_URL__',os.environ.get('AIRBNB_ICAL_URL',''))
-html=html.replace('__ICAL_URL_2__',os.environ.get('AIRBNB_ICAL_URL_2',''))
+for k,v in [('__ANTHROPIC_API_KEY__','ANTHROPIC_API_KEY'),('__ICAL_URL__','AIRBNB_ICAL_URL'),('__ICAL_URL_2__','AIRBNB_ICAL_URL_2'),('__TELEGRAM_BOT_TOKEN__','TELEGRAM_BOT_TOKEN'),('__TELEGRAM_CHAT_ID__','TELEGRAM_CHAT_ID'),('__GH_DISPATCH_PAT__','GH_DISPATCH_PAT')]:
+    html=html.replace(k,os.environ.get(v,''))
 with open('local-test.html','w') as f: f.write(html)
 print('OK')
 "
-
-# Abre con Live Server en VSCode (clic derecho → Open with Live Server)
-# O con Python:
-python -m http.server 8080
-# → http://localhost:8080/local-test.html
 ```
+Clic derecho en `local-test.html` → Open with Live Server.
 
 ---
 
 ## Pendiente
 
-- [ ] Cloudflare Worker desplegado para CORS (iCal Habitación 2 falla sin él)
+- [ ] Cloudflare Worker desplegado para CORS (iCal Habitación 2 puede fallar sin él)
 - [ ] Renombrar "Habitación 1" / "Habitación 2" con los nombres reales en `index.html`
-- [ ] Probar `upload_mossos.js` con un fichero real (necesita contraseña en `.env`)
