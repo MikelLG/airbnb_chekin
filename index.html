@@ -113,6 +113,8 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 .btn-gold:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed;}
 .btn-out{background:transparent;color:var(--text2);border:1.5px solid var(--border2);}
 .btn-out:hover{border-color:var(--text2);color:var(--text);}
+.guest-num-btn{font-size:16px;padding:14px 22px;min-width:110px;}
+.guest-num-btn.selected{border-color:var(--gold);color:var(--gold);}
 .btn-dark{background:var(--bg3);color:var(--text);border:1px solid var(--border2);}
 .btn-dark:hover{border-color:var(--gold);}
 
@@ -254,15 +256,31 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
     </div>
 
     <div style="margin-top:10px">
-      <button class="btn btn-gold" id="btn-next-1" onclick="goStep(2)" disabled>Continuar →</button>
+      <button class="btn btn-gold" id="btn-next-1" onclick="goStepGuests()" disabled>Continuar →</button>
     </div>
+  </div>
+
+  <!-- ═══ PASO 1b: Nº HUÉSPEDES ═══ -->
+  <div class="step" id="step-guests">
+    <div class="eyebrow">Paso 1 de 4</div>
+    <div class="title">¿Cuántas personas hay en la reserva?</div>
+    <div class="subtitle">Necesitarás escanear el DNI o pasaporte de cada persona mayor de 14 años.</div>
+    <div id="guest-count-btns" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:28px 0;">
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(1,this)">1 persona</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(2,this)">2 personas</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(3,this)">3 personas</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(4,this)">4 personas</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(5,this)">5 personas</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(6,this)">6 personas</button>
+    </div>
+    <button class="btn btn-out" onclick="goStep(1)">← Volver</button>
   </div>
 
   <!-- ═══ PASO 2: FOTO DNI ═══ -->
   <div class="step" id="step-2">
     <div class="eyebrow">Paso 2 de 4</div>
-    <div class="title">Foto del documento</div>
-    <div class="subtitle">Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.</div>
+    <div class="title" id="step2-title">Foto del documento</div>
+    <div class="subtitle" id="step2-subtitle">Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.</div>
 
     <div class="err" id="err-2"></div>
     <div class="info">🔒 Tus datos se usan exclusivamente para el registro legal obligatorio (RD 933/2021). No se almacenan en ningún servidor.</div>
@@ -303,7 +321,7 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 
     <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:12px">Leer documento con IA →</button>
     <button class="btn btn-out" onclick="fillStep3();goStep(3)">Saltar, introducir manualmente</button>
-    <button class="btn btn-out" style="margin-top:4px" onclick="goStep(1)">← Volver</button>
+    <button class="btn btn-out" style="margin-top:4px" onclick="goStepGuests()">← Volver</button>
   </div>
 
   <!-- ═══ PASO 3: DATOS ═══ -->
@@ -741,6 +759,21 @@ function initKey() {
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
 const stepLabels = ['','Reserva Airbnb','Foto del documento','Revisa los datos','¡Completado!'];
+function goStepGuests() {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-guests').classList.add('active');
+  document.getElementById('prog-label').textContent = 'Paso 1 de 4 — Reserva Airbnb';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function selectGuestCount(n, btn) {
+  document.querySelectorAll('.guest-num-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('f-nviat').value = n;
+  updateGuestButtons();
+  setTimeout(() => goStep(2), 180);
+}
+
 function goStep(n) {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById('step-'+n).classList.add('active');
@@ -750,6 +783,17 @@ function goStep(n) {
   }
   document.getElementById('prog-label').textContent = `Paso ${n} de 4 — ${stepLabels[n]}`;
   if (n===4) document.getElementById('prog-wrap').style.display='none';
+  if (n===2) {
+    const total = parseInt(document.getElementById('f-nviat').value) || 1;
+    const done = guestsList.length;
+    const guestNum = done + 1;
+    document.getElementById('step2-title').textContent = total > 1
+      ? `Foto del documento — Huésped ${guestNum} de ${total}`
+      : 'Foto del documento';
+    document.getElementById('step2-subtitle').textContent = total > 1
+      ? `Haz una foto al DNI o pasaporte del huésped ${guestNum}.`
+      : 'Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.';
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -926,7 +970,7 @@ function togglePostalFields() {
 
 function skipAirbnb() {
   // Don't clear airbnbData — user may have already selected a reservation
-  goStep(2);
+  goStepGuests();
 }
 
 // ═══════════════════════════════════════════════════════════

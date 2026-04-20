@@ -86,6 +86,8 @@ node upload_mossos.js ID50044239.001.txt
 
 ## Test local del portal
 
+**Click derecho en index.html y live server.**
+
 ```powershell
 cd C:\Users\Mikel\Documents\airbnb_chekin
 
