@@ -1457,7 +1457,14 @@ function resetAll() {
 // INIT
 // ═══════════════════════════════════════════════════════════
 initKey();
-// loadIcal() is now triggered by selectRoom(), not on init
+// Auto-select room from URL param ?room=1 or ?room=2
+(function() {
+  const roomParam = new URLSearchParams(window.location.search).get('room');
+  if (roomParam === '1' || roomParam === '2') {
+    document.getElementById('room-selector').style.display = 'none';
+    selectRoom(parseInt(roomParam));
+  }
+})();
 </script>
 </body>
 </html>
