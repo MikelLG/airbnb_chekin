@@ -1151,7 +1151,7 @@ function fillStep3() {
     setAI('f-reserva', airbnbData.codigo);
     setAI('f-entrada', airbnbData.entrada);
     setAI('f-salida', airbnbData.salida);
-    setAI('f-nviat', String(airbnbData.num_huespedes || '1'));
+    // Don't override guest count — user already set it in the guests step
     if (airbnbData.telefono) setAI('f-tel', airbnbData.telefono);
     if (airbnbData.email) setAI('f-email', airbnbData.email);
     if (airbnbData.hora_entrada) setVal('f-hora-in', airbnbData.hora_entrada.slice(0,2)+':'+airbnbData.hora_entrada.slice(2,4));
