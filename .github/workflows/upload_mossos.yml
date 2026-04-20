@@ -18,10 +18,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install && npm install -D @playwright/test
 
       - name: Install Playwright browser
-        run: node node_modules/.bin/playwright install chromium --with-deps
+        run: npx --yes @playwright/test install chromium --with-deps
 
       - name: Write .txt file
         run: |
