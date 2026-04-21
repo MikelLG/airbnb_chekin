@@ -884,7 +884,12 @@ async function loadIcal(icalUrl) {
       } catch(e) { lastErr = e; continue; }
     }
     if (!text) throw lastErr || new Error('All proxies failed');
-    const reservations = parseIcal(text);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + 20);
+    const reservations = parseIcal(text).filter(r => {
+      const checkin = new Date(r.entrada);
+      return checkin <= cutoff;
+    });
 
     document.getElementById('ical-loading').style.display = 'none';
 
