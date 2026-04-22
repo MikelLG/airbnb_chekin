@@ -38,8 +38,8 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: node upload_mossos.js "${{ github.event.client_payload.filename }}"
 
-      - name: Upload screenshots on failure
-        if: failure()
+      - name: Upload screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mossos-screenshots

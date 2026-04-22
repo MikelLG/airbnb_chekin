@@ -149,7 +149,9 @@ async function uploadToMossos(filePath) {
     const result = await page.textContent('body');
     await page.screenshot({ path: 'mossos_result.png' });
 
-    if (result.includes('èxit') || result.includes('correctament') || result.includes('éxito') || result.includes('correcta')) {
+    console.log('   📋 Respuesta Mossos:', result.slice(0, 300));
+    const successWords = ['èxit','correctament','éxito','correcta','rebut','recibido','procesado','acceptat','aceptado','enviat','enviado','ok','registr'];
+    if (successWords.some(w => result.toLowerCase().includes(w))) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
       const comprovant = page.locator('a:has-text("comprovant"), a:has-text("Descarregar"), a:has-text("comprobante")');
       let pdfPath = null;
