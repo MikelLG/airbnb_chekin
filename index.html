@@ -1332,9 +1332,21 @@ function generateFile() {
   goStep(4);
 }
 
+function normalizeAscii(str) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')  // remove diacritics
+    .replace(/[^\x00-\x7F]/g, '')     // remove any remaining non-ASCII
+    .toUpperCase();
+}
+
 function doDownload() {
   const fname = document.getElementById('btn-dl').dataset.fname;
-  const blob = new Blob([fileContent], {type:'text/plain;charset=utf-8'});
+  const normalized = fileContent.split('\r\n').map((line, i) => {
+    if (i === 0) return line; // header line unchanged
+    return line.split('|').map(field => normalizeAscii(field)).join('|');
+  }).join('\r\n');
+  const blob = new Blob([normalized], {type:'text/plain;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = fname; a.click();
@@ -1346,8 +1358,12 @@ function doDownload() {
 async function triggerMossosUpload(fname) {
   if (!_GH_PAT || _GH_PAT.startsWith('__')) return;
   try {
-    const content = btoa(unescape(encodeURIComponent(fileContent)));
-    await fetch('https://api.github.com/repos/MikelLG/airbnb_chekin/dispatches', {
+    const normalizedContent = fileContent.split('\r\n').map((line, i) => {
+      if (i === 0) return line;
+      return line.split('|').map(field => normalizeAscii(field)).join('|');
+    }).join('\r\n');
+    const content = btoa(unescape(encodeURIComponent(normalizedContent)));
+    await fetch('https://api.github.com/repos/anikashouse/airbnb_chekin/dispatches', {
       method: 'POST',
       headers: {
         'Authorization': `token ${_GH_PAT}`,
