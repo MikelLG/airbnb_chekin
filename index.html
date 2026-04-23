@@ -585,6 +585,7 @@ function googleTranslateElementInit() {
           <div class="field">
             <label>País</label>
             <select id="f-pais" onchange="togglePostalFields()">
+              <option value="">— Igual que nacionalidad —</option>
               <option value="ESP">España</option>
               <option value="FRA">Francia</option>
               <option value="DEU">Alemania</option>
@@ -1301,7 +1302,7 @@ function readCurrentGuest() {
   const now = new Date();
   const entFmt = entrada.replace(/-/g,'');
   const salFmt = salida.replace(/-/g,'');
-  const paisPostalRaw = (v('f-pais')||'ESP').toUpperCase();
+  const paisPostalRaw = (v('f-pais') || v('f-nac') || 'ESP').toUpperCase();
   const paisPostal = paisPostalRaw === 'OTHER' ? (v('f-pais-other')||'').toUpperCase() : paisPostalRaw;
   const isEsp = paisPostalRaw === 'ESP';
   const tipusContracte = entFmt >= fmtDate(now) ? 'R' : 'C';
@@ -1395,7 +1396,7 @@ function validateStep3() {
   if (new Date(v('f-salida')) <= new Date(v('f-entrada'))) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return false; }
   const entFmt = v('f-entrada').replace(/-/g,'');
   const tipusContracte = entFmt >= fmtDate(new Date()) ? 'R' : 'C';
-  const paisPostalRaw = (v('f-pais')||'ESP').toUpperCase();
+  const paisPostalRaw = (v('f-pais') || v('f-nac') || 'ESP').toUpperCase();
   const isEsp = paisPostalRaw === 'ESP';
   if (tipusContracte === 'C') {
     if (!v('f-adreca')) { showErr('err-3','La dirección postal es obligatoria para estancias en curso.'); return false; }
