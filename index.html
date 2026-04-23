@@ -366,7 +366,7 @@ function googleTranslateElementInit() {
       </div>
     </div>
 
-    <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:16px">Leer documento con IA →</button>
+    <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:16px">Escanear documento →</button>
     <button class="btn btn-out" onclick="fillStep3();goStep(3)">Saltar, introducir manualmente</button>
     <button class="btn btn-out" style="margin-top:4px" onclick="goStepGuests()">← Volver</button>
   </div>
@@ -1175,7 +1175,7 @@ Responde SOLO con JSON válido sin markdown:
     showErr('err-2', 'No se pudo leer el documento: ' + e.message + '. Puedes introducir los datos manualmente.');
     const reserva = v('f-reserva') || airbnbData.codigo || '—';
     tgNotify(`⚠️ *Error IA — Check-in*\n📋 Reserva: \`${reserva}\`\n🔴 ${e.message}`);
-    btn.textContent = 'Leer documento con IA →';
+    btn.textContent = 'Escanear documento →';
     btn.disabled = false;
   }
 }
