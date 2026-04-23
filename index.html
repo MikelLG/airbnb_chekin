@@ -721,17 +721,18 @@ function googleTranslateElementInit() {
           <label>Total huéspedes</label>
           <input type="number" id="f-nviat" value="1" min="1" max="20" oninput="updateGuestButtons()">
         </div>
-        <div class="card-label" style="margin-top:4px;margin-bottom:8px"><span class="req">*</span> Contacto <span style="color:var(--text3);font-size:9px;font-weight:400">(teléfono o email, al menos uno)</span></div>
+        <div class="card-label" style="margin-top:4px;margin-bottom:8px"><span class="req">*</span> <span id="lbl-contact-section">Contacto</span></div>
         <div class="row2">
           <div class="field">
-            <label>Teléfono</label>
+            <label id="lbl-tel">Teléfono</label>
             <input type="tel" id="f-tel" placeholder="+34 600 000 000">
           </div>
           <div class="field">
-            <label>Email</label>
+            <label id="lbl-email">Email</label>
             <input type="email" id="f-email" placeholder="correo@ejemplo.com">
           </div>
         </div>
+        <p id="tel-reservation-hint" style="display:none;font-size:12px;color:var(--text3);margin:4px 0 0"></p>
       </div>
     </div>
 
@@ -896,6 +897,12 @@ function goStep(n) {
         ? `Haz una foto al DNI o pasaporte del huésped ${labelNum}.`
         : 'Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.';
   }
+  if (n===3) {
+    const isBaby = babyCount > 0 && guestsList.length >= adultCount;
+    document.getElementById('lbl-tel').textContent   = isBaby ? 'Teléfono del padre/madre' : 'Teléfono';
+    document.getElementById('lbl-email').textContent = isBaby ? 'Email del padre/madre'    : 'Email';
+    document.getElementById('lbl-contact-section').textContent = isBaby ? 'Contacto del padre/madre' : 'Contacto';
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1039,13 +1046,19 @@ function parseIcal(text) {
     const guestMatch = summary.match(/(\d+)\s*(guest|huésped|persona)/i);
     const num_huespedes = guestMatch ? parseInt(guestMatch[1]) : 1;
 
+    // Last 4 digits of phone from DESCRIPTION
+    const desc = get('DESCRIPTION');
+    const phoneMatch = desc.match(/Phone Number[^:]*:\s*(\d{4})/i);
+    const tel_suffix = phoneMatch ? phoneMatch[1] : null;
+
     events.push({
       codigo,
       entrada: start.toISOString().slice(0,10),
       salida: end.toISOString().slice(0,10),
       num_huespedes,
       hora_entrada: '1500',
-      hora_salida: '1100'
+      hora_salida: '1100',
+      tel_suffix,
     });
   }
 
@@ -1235,6 +1248,13 @@ function fillStep3() {
     if (airbnbData.hora_entrada) setVal('f-hora-in', airbnbData.hora_entrada.slice(0,2)+':'+airbnbData.hora_entrada.slice(2,4));
     if (airbnbData.hora_salida) setVal('f-hora-out', airbnbData.hora_salida.slice(0,2)+':'+airbnbData.hora_salida.slice(2,4));
     document.getElementById('stay-ai-badge').style.display = 'inline-block';
+    const telHint = document.getElementById('tel-reservation-hint');
+    if (airbnbData.tel_suffix) {
+      telHint.textContent = `Usa el mismo teléfono de la reserva Airbnb (termina en …${airbnbData.tel_suffix})`;
+      telHint.style.display = 'block';
+    } else {
+      telHint.style.display = 'none';
+    }
   }
 
   // Country logic — simplified, no INE codes needed
@@ -1334,7 +1354,8 @@ function validateStep3() {
   const currentIsBaby = babyCount > 0 && guestsList.length >= adultCount;
   if (!v('f-numdoc')||!v('f-ap1')||!v('f-nom')) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return false; }
   if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
-  if (!currentIsBaby && !v('f-tel') && !v('f-email')) { showErr('err-3','Es obligatorio indicar al menos teléfono o email del huésped.'); return false; }
+  if (!v('f-tel')) { showErr('err-3', currentIsBaby ? 'Introduce el teléfono del padre/madre.' : 'El teléfono es obligatorio.'); return false; }
+  if (!v('f-email')) { showErr('err-3', currentIsBaby ? 'Introduce el email del padre/madre.' : 'El email es obligatorio.'); return false; }
   if (new Date(v('f-salida')) <= new Date(v('f-entrada'))) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return false; }
   const entFmt = v('f-entrada').replace(/-/g,'');
   const tipusContracte = entFmt >= fmtDate(new Date()) ? 'R' : 'C';
