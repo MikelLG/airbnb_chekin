@@ -741,7 +741,6 @@ function googleTranslateElementInit() {
             <input type="email" id="f-email" placeholder="correo@ejemplo.com">
           </div>
         </div>
-        <p id="tel-reservation-hint" style="display:none;font-size:12px;color:var(--text3);margin:4px 0 0"></p>
       </div>
     </div>
 
@@ -1262,13 +1261,6 @@ function fillStep3() {
     if (airbnbData.hora_entrada) setVal('f-hora-in', airbnbData.hora_entrada.slice(0,2)+':'+airbnbData.hora_entrada.slice(2,4));
     if (airbnbData.hora_salida) setVal('f-hora-out', airbnbData.hora_salida.slice(0,2)+':'+airbnbData.hora_salida.slice(2,4));
     document.getElementById('stay-ai-badge').style.display = 'inline-block';
-    const telHint = document.getElementById('tel-reservation-hint');
-    if (airbnbData.tel_suffix) {
-      telHint.textContent = `Usa el mismo teléfono de la reserva Airbnb (termina en …${airbnbData.tel_suffix})`;
-      telHint.style.display = 'block';
-    } else {
-      telHint.style.display = 'none';
-    }
   }
 
   // Country logic — simplified, no INE codes needed
@@ -1425,6 +1417,15 @@ function generateFile() {
   if (!validateStep3()) return;
 
   const allGuests = [...guestsList, readCurrentGuest()];
+
+  // Verify at least one guest phone matches the reservation's last 4 digits
+  if (airbnbData.tel_suffix) {
+    const anyMatch = allGuests.some(g => g[22].endsWith(airbnbData.tel_suffix));
+    if (!anyMatch) {
+      showErr('err-3', `⚠️ Ningún teléfono coincide con el de la reserva (termina en …${airbnbData.tel_suffix}). Comprueba que has introducido el teléfono correcto.`);
+      return;
+    }
+  }
   const now = new Date();
   const fconf = fmtDate(now);
   const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, '0900', String(allGuests.length), 'V24'].join('|');
