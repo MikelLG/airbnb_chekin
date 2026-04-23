@@ -176,37 +176,48 @@ async function uploadToMossos(filePath) {
     if (hasSuccess && !hasError) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
 
-      // Download comprobante — navigate directly to href (avoids download event issues)
+      // Download comprobante — href is '#', download triggered by JavaScript
       const comprovant = page.locator('a').filter({ hasText: /comprov|descarr|download|pdf|justif/i });
       let pdfPath = null;
       if (await comprovant.count() > 0) {
-        const linkText = await comprovant.first().textContent();
-        const linkHref = await comprovant.first().getAttribute('href');
-        console.log(`   🔗 Enlace comprovant: "${linkText?.trim()}" → ${linkHref}`);
-        if (linkHref) {
-          try {
-            const currentUrl = page.url();
-            const fullHref = linkHref.startsWith('http') ? linkHref : new URL(linkHref, currentUrl).href;
-            console.log(`   🌐 Navegando a: ${fullHref}`);
-            const response = await page.goto(fullHref, { waitUntil: 'networkidle', timeout: 15000 });
-            const contentType = (response.headers()['content-type'] || '').toLowerCase();
-            const buffer = await response.body();
-            console.log(`   📄 Content-Type: ${contentType}, tamaño: ${buffer?.length} bytes`);
-            if (buffer && buffer.length > 200) {
-              pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
-              fs.writeFileSync(pdfPath, buffer);
-              console.log(`   📥 Comprovant guardado: ${path.basename(pdfPath)}`);
-            } else {
-              console.warn('   ⚠️  Respuesta demasiado pequeña, no es un PDF válido');
-            }
-          } catch(e) {
-            console.warn('   ⚠️  Error al descargar comprovant:', e.message);
+        const linkText  = await comprovant.first().textContent();
+        const onclickAttr = await comprovant.first().getAttribute('onclick');
+        console.log(`   🔗 "${linkText?.trim()}" onclick="${onclickAttr}"`);
+
+        // Set up listeners BEFORE clicking
+        const downloadP = page.waitForEvent('download', { timeout: 12000 })
+          .then(d => ({ type: 'download', data: d })).catch(() => null);
+        const newPageP  = page.context().waitForEvent('page', { timeout: 12000 })
+          .then(p => ({ type: 'page', data: p })).catch(() => null);
+
+        await comprovant.first().click();
+
+        const result = await Promise.race([downloadP, newPageP,
+          new Promise(r => setTimeout(() => r(null), 13000))]);
+
+        if (result?.type === 'download') {
+          pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
+          await result.data.saveAs(pdfPath);
+          console.log(`   📥 Comprovant (descarga directa): ${path.basename(pdfPath)}`);
+        } else if (result?.type === 'page') {
+          const newTab = result.data;
+          await newTab.waitForLoadState('networkidle').catch(() => {});
+          const buf = await newTab.evaluate(() =>
+            fetch(location.href).then(r => r.arrayBuffer()).then(b => Array.from(new Uint8Array(b)))
+          ).catch(() => null);
+          await newTab.close();
+          if (buf && buf.length > 500) {
+            pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
+            fs.writeFileSync(pdfPath, Buffer.from(buf));
+            console.log(`   📥 Comprovant (nueva pestaña): ${path.basename(pdfPath)}`);
+          } else {
+            console.warn('   ⚠️  Nueva pestaña abierta pero sin PDF válido');
           }
         } else {
-          console.warn('   ⚠️  El enlace comprovant no tiene href');
+          console.warn('   ⚠️  Sin respuesta tras 13s — onclick:', onclickAttr);
         }
       } else {
-        console.log('   ℹ️  No se encontró enlace de comprovant en la página');
+        console.log('   ℹ️  No se encontró enlace de comprobante en la página');
       }
 
       const tgMsg = pdfPath
