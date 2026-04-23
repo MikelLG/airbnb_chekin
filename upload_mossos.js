@@ -149,25 +149,44 @@ async function uploadToMossos(filePath) {
     const result = await page.textContent('body');
     await page.screenshot({ path: 'mossos_result.png' });
 
-    console.log('   📋 Respuesta Mossos:', result.slice(0, 300));
+    console.log('   📋 Respuesta Mossos:', result.slice(0, 500));
+
+    // Log all links on the page to help debug comprobante selector
+    const allLinks = await page.$$eval('a', els => els.map(e => e.textContent.trim() + ' → ' + e.href).filter(t => t.length > 3));
+    console.log('   🔗 Enlaces en página resultado:', allLinks);
+
     const successWords = ['èxit','correctament','éxito','correcta','rebut','recibido','procesado','acceptat','aceptado','enviat','enviado','ok','registr'];
     if (successWords.some(w => result.toLowerCase().includes(w))) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
-      const comprovant = page.locator('a:has-text("comprovant"), a:has-text("Descarregar"), a:has-text("comprobante")');
+
+      // Try broad selector for comprobante — log whatever text is on the page
+      const comprovant = page.locator('a').filter({ hasText: /comprov|descarr|download|pdf|justif/i });
       let pdfPath = null;
       if (await comprovant.count() > 0) {
-        const [download] = await Promise.all([
-          page.waitForEvent('download'),
-          comprovant.first().click()
-        ]);
-        pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
-        await download.saveAs(pdfPath);
-        console.log(`   📥 Comprovant guardado: ${path.basename(pdfPath)}`);
+        console.log(`   🔗 Enlace comprovant encontrado: ${await comprovant.first().textContent()}`);
+        try {
+          const [download] = await Promise.all([
+            page.waitForEvent('download', { timeout: 8000 }),
+            comprovant.first().click()
+          ]);
+          pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
+          await download.saveAs(pdfPath);
+          console.log(`   📥 Comprovant guardado: ${path.basename(pdfPath)}`);
+        } catch(e) {
+          console.warn('   ⚠️  No se pudo descargar el comprovant:', e.message);
+        }
+      } else {
+        console.log('   ℹ️  No se encontró enlace de comprovant en la página');
       }
-      await tg(`✅ *Mossos — Subida correcta*\n📄 \`${path.basename(absPath)}\`\n📥 Comprovant adjunto`, pdfPath);
+
+      const tgMsg = pdfPath
+        ? `✅ *Mossos — Subida correcta*\n📄 \`${path.basename(absPath)}\`\n📥 Comprovant adjunto`
+        : `✅ *Mossos — Subida correcta*\n📄 \`${path.basename(absPath)}\`\n_(sin comprovant disponible)_`;
+      await tg(tgMsg, pdfPath);
+
       await sendEmail(
         `✅ Mossos — ${path.basename(absPath)}`,
-        `Fichero subido correctamente a Mossos.\n\nFichero: ${path.basename(absPath)}\nFecha: ${new Date().toLocaleString('es-ES')}`,
+        `Fichero subido correctamente a Mossos.\n\nFichero: ${path.basename(absPath)}\nFecha: ${new Date().toLocaleString('es-ES')}${pdfPath ? '' : '\n\nNota: No se encontró enlace de comprovant en la página de Mossos.'}`,
         [
           { filename: path.basename(absPath), path: absPath },
           ...(pdfPath ? [{ filename: path.basename(pdfPath), path: pdfPath }] : [])
