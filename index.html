@@ -564,7 +564,7 @@ function googleTranslateElementInit() {
             <input type="date" id="f-exp">
           </div>
           <div class="field">
-            <label>Fecha caducidad doc</label>
+            <label><span class="req">*</span> Fecha caducidad doc</label>
             <input type="date" id="f-cad" oninput="checkDocExpiry()">
           </div>
         </div>
@@ -1394,6 +1394,8 @@ function validateStep3() {
   if (!v('f-sexe')) { showErr('err-3','El sexo es obligatorio.'); return false; }
   if (!v('f-naix')) { showErr('err-3','La fecha de nacimiento es obligatoria.'); return false; }
   if (!v('f-exp')) { showErr('err-3','La fecha de expedición del documento es obligatoria.'); return false; }
+  if (!v('f-cad')) { showErr('err-3','La fecha de caducidad del documento es obligatoria.'); return false; }
+  if (new Date(v('f-cad')) < new Date()) { showErr('err-3','El documento ha caducado. El huésped debe presentar un documento válido.'); return false; }
   if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
   if (!v('f-tel')) { showErr('err-3', currentIsBaby ? 'Introduce el teléfono del padre/madre.' : 'El teléfono es obligatorio.'); return false; }
   if (!v('f-email')) { showErr('err-3', currentIsBaby ? 'Introduce el email del padre/madre.' : 'El email es obligatorio.'); return false; }
