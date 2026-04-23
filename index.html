@@ -282,7 +282,18 @@ function googleTranslateElementInit() {
       <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(1,this)">1 persona</button>
       <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(2,this)">2 personas</button>
     </div>
-    <button class="btn btn-out" onclick="goStep(1)">← Volver</button>
+
+    <div id="baby-section" style="display:none;margin-top:4px">
+      <div class="card-label" style="margin-bottom:12px">¿Hay algún bebé? <span style="font-weight:400;color:var(--text3)">(no cuenta como huésped en Airbnb)</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:24px">
+        <button class="btn btn-out baby-num-btn" onclick="selectBabyCount(0,this)">Sin bebés</button>
+        <button class="btn btn-out baby-num-btn" onclick="selectBabyCount(1,this)">1 bebé</button>
+        <button class="btn btn-out baby-num-btn" onclick="selectBabyCount(2,this)">2 bebés</button>
+      </div>
+    </div>
+
+    <button class="btn btn-gold" id="btn-confirm-guests" onclick="confirmGuestCount()" style="display:none">Continuar →</button>
+    <button class="btn btn-out" style="margin-top:8px" onclick="goStep(1)">← Volver</button>
   </div>
 
   <!-- ═══ PASO 2: FOTO DNI ═══ -->
@@ -783,6 +794,8 @@ let stream = null;
 let airbnbData = {};
 let dniData = {};
 let guestsList = [];  // accumulated guests before generating file
+let adultCount = 1;
+let babyCount = 0;
 
 // ═══════════════════════════════════════════════════════════
 // API KEY — injected at build time by GitHub Actions
@@ -804,15 +817,39 @@ function goStepGuests() {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById('step-guests').classList.add('active');
   document.getElementById('prog-label').textContent = 'Paso 1 de 4 — Reserva Airbnb';
+  // Reset baby section to clean state
+  document.getElementById('baby-section').style.display = 'none';
+  document.getElementById('btn-confirm-guests').style.display = 'none';
+  document.querySelectorAll('.guest-num-btn,.baby-num-btn').forEach(b => b.classList.remove('selected'));
+  adultCount = 1; babyCount = 0;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function selectGuestCount(n, btn) {
   document.querySelectorAll('.guest-num-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  document.getElementById('f-nviat').value = n;
+  adultCount = n;
+  document.getElementById('baby-section').style.display = 'block';
+  _updateGuestContinueBtn();
+}
+
+function selectBabyCount(n, btn) {
+  document.querySelectorAll('.baby-num-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  babyCount = n;
+  _updateGuestContinueBtn();
+}
+
+function _updateGuestContinueBtn() {
+  const babySelected = document.querySelector('.baby-num-btn.selected');
+  const btn = document.getElementById('btn-confirm-guests');
+  btn.style.display = babySelected ? 'block' : 'none';
+}
+
+function confirmGuestCount() {
+  document.getElementById('f-nviat').value = adultCount + babyCount;
   updateGuestButtons();
-  setTimeout(() => goStep(2), 180);
+  goStep(2);
 }
 
 function goStep(n) {
@@ -827,13 +864,17 @@ function goStep(n) {
   if (n===2) {
     const total = parseInt(document.getElementById('f-nviat').value) || 1;
     const done = guestsList.length;
-    const guestNum = done + 1;
+    const isBaby = babyCount > 0 && done >= adultCount;
+    const label = isBaby ? 'Bebé' : 'Huésped';
+    const labelNum = isBaby ? done - adultCount + 1 : done + 1;
     document.getElementById('step2-title').textContent = total > 1
-      ? `Foto del documento — Huésped ${guestNum} de ${total}`
+      ? `Foto del documento — ${label} ${labelNum} de ${total}`
       : 'Foto del documento';
-    document.getElementById('step2-subtitle').textContent = total > 1
-      ? `Haz una foto al DNI o pasaporte del huésped ${guestNum}.`
-      : 'Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.';
+    document.getElementById('step2-subtitle').textContent = isBaby
+      ? `Haz una foto al documento del bebé ${labelNum}.`
+      : total > 1
+        ? `Haz una foto al DNI o pasaporte del huésped ${labelNum}.`
+        : 'Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.';
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1208,9 +1249,12 @@ function setVal(id, val) {
 function updateGuestButtons() {
   const total = parseInt(v('f-nviat') || '1');
   const done = guestsList.length;
-  const remaining = total - done - 1; // -1 for current guest being filled
+  const remaining = total - done - 1;
+  const isBaby = babyCount > 0 && done >= adultCount;
+  const label = isBaby ? 'Bebé' : 'Huésped';
+  const labelNum = isBaby ? done - adultCount + 1 : done + 1;
   const prog = document.getElementById('guest-progress');
-  prog.textContent = total > 1 ? `Huésped ${done + 1} de ${total}` : '';
+  prog.textContent = total > 1 ? `${label} ${labelNum} de ${total}` : '';
   document.getElementById('btn-add-guest').style.display = remaining > 0 ? 'block' : 'none';
   document.getElementById('btn-generate').style.display = remaining > 0 ? 'none' : 'block';
 }
@@ -1250,7 +1294,7 @@ function readCurrentGuest() {
     (v('f-reserva')||'').toUpperCase(),
     v('f-nviat')||'1',
     '1',
-    'N',
+    (babyCount > 0 && guestsList.length >= adultCount) ? 'S' : 'N',
     'PLATF',
     telClean,
     '',
@@ -1267,9 +1311,10 @@ function readCurrentGuest() {
 
 function validateStep3() {
   hideErr('err-3');
+  const currentIsBaby = babyCount > 0 && guestsList.length >= adultCount;
   if (!v('f-numdoc')||!v('f-ap1')||!v('f-nom')) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return false; }
   if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
-  if (!v('f-tel') && !v('f-email')) { showErr('err-3','Es obligatorio indicar al menos teléfono o email del huésped.'); return false; }
+  if (!currentIsBaby && !v('f-tel') && !v('f-email')) { showErr('err-3','Es obligatorio indicar al menos teléfono o email del huésped.'); return false; }
   if (new Date(v('f-salida')) <= new Date(v('f-entrada'))) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return false; }
   const entFmt = v('f-entrada').replace(/-/g,'');
   const tipusContracte = entFmt >= fmtDate(new Date()) ? 'R' : 'C';
@@ -1334,9 +1379,10 @@ function generateFile() {
 
 function normalizeAscii(str) {
   return (str || '')
+    .replace(/[            ]/g, ' ')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')  // remove diacritics
-    .replace(/[^\x00-\x7F]/g, '')     // remove any remaining non-ASCII
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^\x00-\x7F]/g, '')
     .toUpperCase();
 }
 
@@ -1459,6 +1505,10 @@ function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMi
 
 function resetAll() {
   dniData={}; airbnbData={}; guestsList=[]; capturedImage=null; capturedImageBack=null; fileContent='';
+  adultCount=1; babyCount=0;
+  document.getElementById('baby-section').style.display='none';
+  document.getElementById('btn-confirm-guests').style.display='none';
+  document.querySelectorAll('.guest-num-btn,.baby-num-btn').forEach(b=>b.classList.remove('selected'));
   const emailEl = document.getElementById('airbnb-email'); if(emailEl) emailEl.value='';
   document.getElementById('airbnb-result').style.display='none';
   document.getElementById('btn-next-1').disabled=true;
