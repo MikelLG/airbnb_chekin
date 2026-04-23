@@ -394,11 +394,11 @@ function googleTranslateElementInit() {
         <div class="row2">
           <div class="field">
             <label><span class="req">*</span> Tipo documento</label>
-            <select id="f-tipo">
+            <select id="f-tipo" onchange="onTipoChange()">
               <option value="D">DNI / NIF</option>
               <option value="P">Pasaporte</option>
               <option value="N">NIE</option>
-              <option value="O">Otro</option>
+              <option value="O">Otro (ID extranjero, etc.)</option>
             </select>
           </div>
           <div class="field">
@@ -1213,9 +1213,11 @@ Responde SOLO con JSON válido sin markdown:
 // ═══════════════════════════════════════════════════════════
 function fillStep3() {
   updateGuestButtons();
+  onTipoChange(); // sync placeholder/hint with current tipo selection
   // DNI data
   if (Object.keys(dniData).length > 0) {
     setAI('f-tipo', dniData.tipus_doc);
+    onTipoChange(); // re-sync after AI sets tipo
     setAI('f-numdoc', dniData.num_doc);
     setAI('f-ap1', dniData.primer_cognom);
     setAI('f-ap2', dniData.segon_cognom);
@@ -1341,6 +1343,35 @@ function readCurrentGuest() {
   ];
 }
 
+const DOC_FORMATS = {
+  D: { placeholder: '12345678A',          hint: 'DNI español: 8 dígitos + letra (ej. 12345678Z)',       re: /^\d{8}[A-Za-z]$/ },
+  N: { placeholder: 'X1234567A',          hint: 'NIE: X/Y/Z + 7 dígitos + letra (ej. X1234567Z)',       re: /^[XYZxyz]\d{7}[A-Za-z]$/ },
+  P: { placeholder: 'ABC123456',          hint: 'Número de pasaporte (alfanumérico)',                     re: /^[A-Za-z0-9]{5,20}$/ },
+  O: { placeholder: 'ID extranjero',      hint: 'Documento de identidad extranjero, tarjeta UE, etc.',   re: /^.{3,30}$/ },
+};
+
+function onTipoChange() {
+  const tipo = v('f-tipo') || 'D';
+  const fmt  = DOC_FORMATS[tipo] || DOC_FORMATS.O;
+  const input = document.getElementById('f-numdoc');
+  input.placeholder = fmt.placeholder;
+  // show hint below the field
+  let hint = document.getElementById('numdoc-hint');
+  if (!hint) {
+    hint = document.createElement('small');
+    hint.id = 'numdoc-hint';
+    hint.style.cssText = 'color:var(--text2);font-size:11px;margin-top:2px;display:block';
+    input.parentNode.appendChild(hint);
+  }
+  hint.textContent = fmt.hint;
+}
+
+function validateDocFormat(tipo, numdoc) {
+  const fmt = DOC_FORMATS[tipo] || DOC_FORMATS.O;
+  if (!fmt.re.test(numdoc.trim())) return fmt.hint;
+  return null;
+}
+
 function checkDocExpiry() {
   const cad = v('f-cad');
   const warn = document.getElementById('doc-expired-warn');
@@ -1355,6 +1386,8 @@ function validateStep3() {
   hideErr('err-3');
   const currentIsBaby = babyCount > 0 && guestsList.length >= adultCount;
   if (!v('f-numdoc')||!v('f-ap1')||!v('f-nom')) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return false; }
+  const fmtErr = validateDocFormat(v('f-tipo')||'D', v('f-numdoc')||'');
+  if (fmtErr) { showErr('err-3', `Formato de documento incorrecto. ${fmtErr}`); return false; }
   if (!v('f-naix')) { showErr('err-3','La fecha de nacimiento es obligatoria.'); return false; }
   if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
   if (!v('f-tel')) { showErr('err-3', currentIsBaby ? 'Introduce el teléfono del padre/madre.' : 'El teléfono es obligatorio.'); return false; }
