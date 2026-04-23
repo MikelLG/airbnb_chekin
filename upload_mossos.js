@@ -155,7 +155,7 @@ async function uploadToMossos(filePath) {
     const allLinks = await page.$$eval('a', els => els.map(e => e.textContent.trim() + ' → ' + e.href).filter(t => t.length > 3));
     console.log('   🔗 Enlaces en página resultado:', allLinks);
 
-    const successWords = ['èxit','correctament','éxito','rebut','recibido','procesado','acceptat','aceptado','enviat','enviado'];
+    const successWords = ['èxit','correctament','correctamente','éxito','rebut','recibido','procesado','acceptat','aceptado','enviat','enviado'];
     const errorWords  = ['error','incorrecto','incorrecte','incorrect','incorrecta','incorrectos','fallo','falla','fail','invalid','invàlid','incompleto','incorrectos'];
     const resultLC = result.toLowerCase();
     const hasSuccess = successWords.some(w => resultLC.includes(w));
