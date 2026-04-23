@@ -1452,7 +1452,7 @@ function generateFile() {
   const fconf = fmtDate(now);
   const linEstab = ['1', ESTAB.id, ESTAB.nom, fconf, '0900', String(allGuests.length), 'V24'].join('|');
 
-  fileContent = linEstab + '\r\n' + allGuests.map(g => g.join('|')).join('\r\n');
+  fileContent = linEstab + '\r\n' + allGuests.map(g => g.join('|').replace(/\|+$/, '')).join('\r\n');
 
   fileCounter++;
   localStorage.setItem('mc', fileCounter);
