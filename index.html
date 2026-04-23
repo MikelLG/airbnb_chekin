@@ -557,9 +557,18 @@ function googleTranslateElementInit() {
             <input type="text" id="f-suport" placeholder="AAA123456" maxlength="9">
           </div>
         </div>
-        <div class="field">
-          <label>Fecha expedición doc</label>
-          <input type="date" id="f-exp">
+        <div class="row2">
+          <div class="field">
+            <label>Fecha expedición doc</label>
+            <input type="date" id="f-exp">
+          </div>
+          <div class="field">
+            <label>Fecha caducidad doc</label>
+            <input type="date" id="f-cad" oninput="checkDocExpiry()">
+          </div>
+        </div>
+        <div id="doc-expired-warn" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;font-size:13px;color:#856404;margin-top:6px">
+          ⚠️ El documento ha <strong>caducado</strong>. Comprueba que el huésped tiene un documento válido.
         </div>
       </div>
     </div>
@@ -1192,6 +1201,7 @@ Responde SOLO con JSON válido sin markdown:
   "sexe": "M o F",
   "data_naix": "fecha nacimiento YYYYMMDD",
   "data_exp": "fecha expedición YYYYMMDD o vacío",
+  "data_cad": "fecha caducidad/vencimiento YYYYMMDD o vacío",
   "pais": "código ISO-3 del país de nacionalidad ESP FRA GBR DEU ITA USA RUS etc"
 }`;
 
@@ -1233,6 +1243,10 @@ function fillStep3() {
     }
     if (dniData.data_exp && dniData.data_exp.length===8) {
       setAI('f-exp', dniData.data_exp.slice(0,4)+'-'+dniData.data_exp.slice(4,6)+'-'+dniData.data_exp.slice(6,8));
+    }
+    if (dniData.data_cad && dniData.data_cad.length===8) {
+      setAI('f-cad', dniData.data_cad.slice(0,4)+'-'+dniData.data_cad.slice(4,6)+'-'+dniData.data_cad.slice(6,8));
+      checkDocExpiry();
     }
     document.getElementById('doc-ai-badge').style.display = 'inline-block';
   }
@@ -1349,6 +1363,16 @@ function readCurrentGuest() {
   ];
 }
 
+function checkDocExpiry() {
+  const cad = v('f-cad');
+  const warn = document.getElementById('doc-expired-warn');
+  if (cad && new Date(cad) < new Date()) {
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
 function validateStep3() {
   hideErr('err-3');
   const currentIsBaby = babyCount > 0 && guestsList.length >= adultCount;
@@ -1375,7 +1399,8 @@ function saveGuestAndNext() {
   guestsList.push(readCurrentGuest());
   // Clear document fields only, keep stay + address for next guest
   dniData = {};
-  ['f-tipo','f-numdoc','f-ap1','f-ap2','f-nom','f-sexe','f-naix','f-suport','f-exp'].forEach(id => {
+  document.getElementById('doc-expired-warn').style.display = 'none';
+  ['f-tipo','f-numdoc','f-ap1','f-ap2','f-nom','f-sexe','f-naix','f-suport','f-exp','f-cad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = el.tagName==='SELECT' ? el.options[0].value : ''; el.classList.remove('ai'); }
   });
@@ -1579,6 +1604,7 @@ function resetAll() {
   document.getElementById('prog-wrap').style.display='block';
   document.getElementById('doc-ai-badge').style.display='none';
   document.getElementById('stay-ai-badge').style.display='none';
+  document.getElementById('doc-expired-warn').style.display='none';
   // Reset room selector
   selectedRoom = null;
   document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
