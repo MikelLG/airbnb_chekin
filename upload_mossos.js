@@ -176,21 +176,42 @@ async function uploadToMossos(filePath) {
     if (hasSuccess && !hasError) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
 
-      // Try broad selector for comprobante — log whatever text is on the page
+      // Download comprobante
       const comprovant = page.locator('a').filter({ hasText: /comprov|descarr|download|pdf|justif/i });
       let pdfPath = null;
       if (await comprovant.count() > 0) {
-        console.log(`   🔗 Enlace comprovant encontrado: ${await comprovant.first().textContent()}`);
+        const linkText = await comprovant.first().textContent();
+        const linkHref = await comprovant.first().getAttribute('href');
+        console.log(`   🔗 Enlace comprovant: "${linkText?.trim()}" → ${linkHref}`);
         try {
+          // Try browser download event first (triggers when Content-Disposition: attachment)
           const [download] = await Promise.all([
-            page.waitForEvent('download', { timeout: 8000 }),
+            page.waitForEvent('download', { timeout: 6000 }),
             comprovant.first().click()
           ]);
           pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
           await download.saveAs(pdfPath);
-          console.log(`   📥 Comprovant guardado: ${path.basename(pdfPath)}`);
-        } catch(e) {
-          console.warn('   ⚠️  No se pudo descargar el comprovant:', e.message);
+          console.log(`   📥 Comprovant guardado (download): ${path.basename(pdfPath)}`);
+        } catch(_) {
+          // Fallback: navigate to href and save the response body directly
+          if (linkHref) {
+            try {
+              const fullHref = linkHref.startsWith('http') ? linkHref : new URL(linkHref, MOSSOS_LOGIN_URL).href;
+              const response = await page.goto(fullHref, { waitUntil: 'networkidle' });
+              const buffer = await response.body();
+              if (buffer && buffer.length > 500) {
+                pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
+                fs.writeFileSync(pdfPath, buffer);
+                console.log(`   📥 Comprovant guardado (navegación): ${path.basename(pdfPath)}`);
+              } else {
+                console.warn('   ⚠️  Respuesta vacía al navegar al comprovant');
+              }
+            } catch(e2) {
+              console.warn('   ⚠️  No se pudo descargar el comprovant:', e2.message);
+            }
+          } else {
+            console.warn('   ⚠️  El enlace comprovant no tiene href');
+          }
         }
       } else {
         console.log('   ℹ️  No se encontró enlace de comprovant en la página');
