@@ -575,7 +575,7 @@ function googleTranslateElementInit() {
 
     <!-- Dirección postal -->
     <div class="card">
-      <div class="card-label">Dirección postal del huésped <span style="color:var(--text3);font-size:9px;font-weight:400">(obligatoria si ya está alojado)</span></div>
+      <div class="card-label">Dirección de residencia del huésped <span class="req">*</span></div>
       <div class="form-grid">
         <div class="field">
           <label><span class="req">*</span> Calle y número</label>
@@ -1075,7 +1075,8 @@ function selectReservation(r) {
 }
 
 function togglePostalFields() {
-  const val = (document.getElementById('f-pais').value||'ESP').toUpperCase();
+  const raw = document.getElementById('f-pais').value;
+  const val = raw ? raw.toUpperCase() : (v('f-nac') || 'ESP').toUpperCase();
   const isEsp = val === 'ESP';
   const isOther = val === 'OTHER';
   document.getElementById('postal-esp').style.display = isEsp ? 'block' : 'none';
@@ -1395,15 +1396,12 @@ function validateStep3() {
   if (!v('f-email')) { showErr('err-3', currentIsBaby ? 'Introduce el email del padre/madre.' : 'El email es obligatorio.'); return false; }
   if (new Date(v('f-salida')) <= new Date(v('f-entrada'))) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return false; }
   const entFmt = v('f-entrada').replace(/-/g,'');
-  const tipusContracte = entFmt >= fmtDate(new Date()) ? 'R' : 'C';
   const paisPostalRaw = (v('f-pais') || v('f-nac') || 'ESP').toUpperCase();
   const isEsp = paisPostalRaw === 'ESP';
-  if (tipusContracte === 'C') {
-    if (!v('f-adreca')) { showErr('err-3','La dirección postal es obligatoria para estancias en curso.'); return false; }
-    if (!v('f-cp')) { showErr('err-3','El código postal es obligatorio.'); return false; }
-    if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia (código INE) es obligatoria.'); return false; }
-    if (!isEsp && !v('f-loc')) { showErr('err-3','La localidad es obligatoria para huéspedes extranjeros.'); return false; }
-  }
+  if (!v('f-adreca')) { showErr('err-3','La dirección de residencia es obligatoria (calle y número).'); return false; }
+  if (!v('f-cp')) { showErr('err-3','El código postal de residencia es obligatorio.'); return false; }
+  if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia (código INE) es obligatoria.'); return false; }
+  if (!isEsp && !v('f-loc')) { showErr('err-3','La localidad de residencia es obligatoria.'); return false; }
   return true;
 }
 
@@ -1623,7 +1621,7 @@ function resetAll() {
   document.getElementById('f-nviat').value='1';
   document.getElementById('f-hora-in').value='15:00';
   document.getElementById('f-hora-out').value='11:00';
-  document.getElementById('f-pais').value='ESP';
+  document.getElementById('f-pais').value='';
   togglePostalFields();
   document.getElementById('prog-wrap').style.display='block';
   document.getElementById('doc-ai-badge').style.display='none';
