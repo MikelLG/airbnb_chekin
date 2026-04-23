@@ -283,12 +283,16 @@ function googleTranslateElementInit() {
       <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(2,this)">2 personas</button>
     </div>
 
-    <div id="baby-section" style="display:none;margin-top:4px">
-      <div class="card-label" style="margin-bottom:12px">¿Hay algún bebé? <span style="font-weight:400;color:var(--text3)">(no cuenta como huésped en Airbnb)</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:24px">
-        <button class="btn btn-out baby-num-btn" onclick="selectBabyCount(0,this)">Sin bebés</button>
-        <button class="btn btn-out baby-num-btn" onclick="selectBabyCount(1,this)">1 bebé</button>
-        <button class="btn btn-out baby-num-btn" onclick="selectBabyCount(2,this)">2 bebés</button>
+    <div id="baby-section-wrap" style="display:none;margin-top:20px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="chk-baby" onchange="toggleBabySection(this.checked)" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer">
+        <span style="font-size:15px">¿Algún bebé en la reserva?</span>
+      </label>
+      <div id="baby-count-row" style="display:none;margin-top:12px;padding-left:28px;font-size:14px;color:var(--text2)">
+        <span>1 bebé</span><span id="baby-extra" style="display:none"> · 2 en total</span>
+        &nbsp;
+        <button id="btn-add-baby" onclick="addSecondBaby()" style="background:none;border:none;cursor:pointer;color:var(--gold);font-size:12px;padding:0;font-family:inherit;text-decoration:underline">+ añadir otro</button>
+        <button id="btn-rm-baby" onclick="removeSecondBaby()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:0;font-family:inherit">✕</button>
       </div>
     </div>
 
@@ -818,10 +822,15 @@ function goStepGuests() {
   document.getElementById('step-guests').classList.add('active');
   document.getElementById('prog-label').textContent = 'Paso 1 de 4 — Reserva Airbnb';
   // Reset baby section to clean state
-  document.getElementById('baby-section').style.display = 'none';
-  document.getElementById('btn-confirm-guests').style.display = 'none';
-  document.querySelectorAll('.guest-num-btn,.baby-num-btn').forEach(b => b.classList.remove('selected'));
   adultCount = 1; babyCount = 0;
+  document.getElementById('baby-section-wrap').style.display = 'none';
+  document.getElementById('baby-count-row').style.display = 'none';
+  document.getElementById('btn-confirm-guests').style.display = 'none';
+  document.getElementById('chk-baby').checked = false;
+  document.getElementById('baby-extra').style.display = 'none';
+  document.getElementById('btn-add-baby').style.display = 'inline';
+  document.getElementById('btn-rm-baby').style.display = 'none';
+  document.querySelectorAll('.guest-num-btn').forEach(b => b.classList.remove('selected'));
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -829,21 +838,32 @@ function selectGuestCount(n, btn) {
   document.querySelectorAll('.guest-num-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   adultCount = n;
-  document.getElementById('baby-section').style.display = 'block';
-  _updateGuestContinueBtn();
+  document.getElementById('baby-section-wrap').style.display = 'block';
+  document.getElementById('btn-confirm-guests').style.display = 'block';
 }
 
-function selectBabyCount(n, btn) {
-  document.querySelectorAll('.baby-num-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  babyCount = n;
-  _updateGuestContinueBtn();
+function toggleBabySection(checked) {
+  babyCount = checked ? 1 : 0;
+  document.getElementById('baby-count-row').style.display = checked ? 'block' : 'none';
+  if (!checked) {
+    document.getElementById('baby-extra').style.display = 'none';
+    document.getElementById('btn-add-baby').style.display = 'inline';
+    document.getElementById('btn-rm-baby').style.display = 'none';
+  }
 }
 
-function _updateGuestContinueBtn() {
-  const babySelected = document.querySelector('.baby-num-btn.selected');
-  const btn = document.getElementById('btn-confirm-guests');
-  btn.style.display = babySelected ? 'block' : 'none';
+function addSecondBaby() {
+  babyCount = 2;
+  document.getElementById('baby-extra').style.display = 'inline';
+  document.getElementById('btn-add-baby').style.display = 'none';
+  document.getElementById('btn-rm-baby').style.display = 'inline';
+}
+
+function removeSecondBaby() {
+  babyCount = 1;
+  document.getElementById('baby-extra').style.display = 'none';
+  document.getElementById('btn-add-baby').style.display = 'inline';
+  document.getElementById('btn-rm-baby').style.display = 'none';
 }
 
 function confirmGuestCount() {
@@ -1506,9 +1526,14 @@ function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMi
 function resetAll() {
   dniData={}; airbnbData={}; guestsList=[]; capturedImage=null; capturedImageBack=null; fileContent='';
   adultCount=1; babyCount=0;
-  document.getElementById('baby-section').style.display='none';
+  document.getElementById('baby-section-wrap').style.display='none';
+  document.getElementById('baby-count-row').style.display='none';
   document.getElementById('btn-confirm-guests').style.display='none';
-  document.querySelectorAll('.guest-num-btn,.baby-num-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('chk-baby').checked=false;
+  document.getElementById('baby-extra').style.display='none';
+  document.getElementById('btn-add-baby').style.display='inline';
+  document.getElementById('btn-rm-baby').style.display='none';
+  document.querySelectorAll('.guest-num-btn').forEach(b=>b.classList.remove('selected'));
   const emailEl = document.getElementById('airbnb-email'); if(emailEl) emailEl.value='';
   document.getElementById('airbnb-result').style.display='none';
   document.getElementById('btn-next-1').disabled=true;
