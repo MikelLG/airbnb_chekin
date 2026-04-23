@@ -1355,6 +1355,7 @@ function validateStep3() {
   hideErr('err-3');
   const currentIsBaby = babyCount > 0 && guestsList.length >= adultCount;
   if (!v('f-numdoc')||!v('f-ap1')||!v('f-nom')) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return false; }
+  if (!v('f-naix')) { showErr('err-3','La fecha de nacimiento es obligatoria.'); return false; }
   if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
   if (!v('f-tel')) { showErr('err-3', currentIsBaby ? 'Introduce el teléfono del padre/madre.' : 'El teléfono es obligatorio.'); return false; }
   if (!v('f-email')) { showErr('err-3', currentIsBaby ? 'Introduce el email del padre/madre.' : 'El email es obligatorio.'); return false; }

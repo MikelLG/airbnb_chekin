@@ -155,8 +155,12 @@ async function uploadToMossos(filePath) {
     const allLinks = await page.$$eval('a', els => els.map(e => e.textContent.trim() + ' → ' + e.href).filter(t => t.length > 3));
     console.log('   🔗 Enlaces en página resultado:', allLinks);
 
-    const successWords = ['èxit','correctament','éxito','correcta','rebut','recibido','procesado','acceptat','aceptado','enviat','enviado','ok','registr'];
-    if (successWords.some(w => result.toLowerCase().includes(w))) {
+    const successWords = ['èxit','correctament','éxito','rebut','recibido','procesado','acceptat','aceptado','enviat','enviado'];
+    const errorWords  = ['error','incorrecto','incorrecte','incorrect','incorrecta','incorrectos','fallo','falla','fail','invalid','invàlid','incompleto','incorrectos'];
+    const resultLC = result.toLowerCase();
+    const hasSuccess = successWords.some(w => resultLC.includes(w));
+    const hasError   = errorWords.some(w => resultLC.includes(w));
+    if (hasSuccess && !hasError) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
 
       // Try broad selector for comprobante — log whatever text is on the page
@@ -193,9 +197,10 @@ async function uploadToMossos(filePath) {
         ]
       );
     } else {
-      console.log('\n⚠️  No se pudo confirmar. Ver mossos_result.png');
-      await tg(`⚠️ *Mossos — Sin confirmación*\n📄 \`${path.basename(absPath)}\`\nRevisa mossos_result.png`);
-      await sendEmail(`⚠️ Mossos — Sin confirmación`, `No se pudo confirmar la subida.\n\nFichero: ${path.basename(absPath)}`);
+      const reason = hasError ? 'Mossos devolvió un error de validación' : 'No se pudo confirmar el envío';
+      console.log(`\n⚠️  ${reason}. Ver mossos_result.png`);
+      await tg(`⚠️ *Mossos — ${hasError ? 'Error de validación' : 'Sin confirmación'}*\n📄 \`${path.basename(absPath)}\`\n${hasError ? '🔴 Revisa el fichero .txt (campos, separadores)' : 'Revisa mossos_result.png'}`);
+      await sendEmail(`⚠️ Mossos — ${hasError ? 'Error validación' : 'Sin confirmación'}`, `${reason}.\n\nFichero: ${path.basename(absPath)}`);
     }
 
   } catch (err) {
