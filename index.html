@@ -747,7 +747,13 @@ function googleTranslateElementInit() {
 
     <div id="guest-progress" style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px;margin-bottom:4px"></div>
     <button class="btn btn-gold" id="btn-add-guest" onclick="saveGuestAndNext()" style="display:none">Añadir siguiente huésped →</button>
-    <button class="btn btn-gold" id="btn-generate" onclick="generateFile()">Generar fichero Mossos →</button>
+
+    <label id="declaration-wrap" style="display:flex;align-items:flex-start;gap:10px;margin:18px 0 12px;cursor:pointer;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;padding:14px 16px">
+      <input type="checkbox" id="chk-declaration" onchange="document.getElementById('btn-generate').disabled=!this.checked" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);cursor:pointer">
+      <span style="font-size:13px;color:var(--text2);line-height:1.5">Declaro que los datos introducidos son verídicos y corresponden a documentos de identidad válidos. Soy consciente de que la comunicación de datos falsos a las autoridades es un delito.</span>
+    </label>
+
+    <button class="btn btn-gold" id="btn-generate" onclick="generateFile()" disabled>Generar fichero Mossos →</button>
     <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
   </div>
 
@@ -1392,6 +1398,8 @@ function saveGuestAndNext() {
   // Clear document fields only, keep stay + address for next guest
   dniData = {};
   document.getElementById('doc-expired-warn').style.display = 'none';
+  document.getElementById('chk-declaration').checked = false;
+  document.getElementById('btn-generate').disabled = true;
   ['f-tipo','f-numdoc','f-ap1','f-ap2','f-nom','f-sexe','f-naix','f-suport','f-exp','f-cad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = el.tagName==='SELECT' ? el.options[0].value : ''; el.classList.remove('ai'); }
@@ -1606,6 +1614,8 @@ function resetAll() {
   document.getElementById('doc-ai-badge').style.display='none';
   document.getElementById('stay-ai-badge').style.display='none';
   document.getElementById('doc-expired-warn').style.display='none';
+  document.getElementById('chk-declaration').checked=false;
+  document.getElementById('btn-generate').disabled=true;
   // Reset room selector
   selectedRoom = null;
   document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
