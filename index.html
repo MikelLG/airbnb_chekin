@@ -1058,9 +1058,17 @@ function parseIcal(text) {
     });
   }
 
+  // Deduplicate by confirmation code (same reservation, multiple guests in iCal)
+  const seen = {};
+  const deduplicated = events.filter(e => {
+    if (seen[e.codigo]) return false;
+    seen[e.codigo] = true;
+    return true;
+  });
+
   // Sort by check-in date
-  events.sort((a,b) => new Date(a.entrada) - new Date(b.entrada));
-  return events.slice(0, 10); // max 10
+  deduplicated.sort((a,b) => new Date(a.entrada) - new Date(b.entrada));
+  return deduplicated.slice(0, 10); // max 10
 }
 
 function selectReservation(r) {
