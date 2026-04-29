@@ -36,6 +36,9 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GOOGLE_ACCESS_TOKEN: ${{ github.event.client_payload.accessToken }}
+          RECORD_ID: ${{ github.event.client_payload.recordId }}
+          DASHBOARD_URL: ${{ github.event.client_payload.dashboardUrl }}
         run: node upload_mossos.js "${{ github.event.client_payload.filename }}"
 
       - name: Upload screenshots

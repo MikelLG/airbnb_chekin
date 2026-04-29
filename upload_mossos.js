@@ -18,6 +18,9 @@ const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN;
 const TG_CHAT    = process.env.TELEGRAM_CHAT_ID;
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD;
+const GOOGLE_ACCESS_TOKEN = process.env.GOOGLE_ACCESS_TOKEN;
+const RECORD_ID = process.env.RECORD_ID;
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:3000';
 
 async function sendEmail(subject, text, attachments = []) {
   if (!GMAIL_USER || !GMAIL_PASS) return;
@@ -62,6 +65,27 @@ async function tg(text, filePath) {
     }
   } catch(e) {
     console.warn('Telegram error:', e.message);
+  }
+}
+
+async function notifyDashboard(recordId, pdfBase64, filename) {
+  if (!RECORD_ID || !GOOGLE_ACCESS_TOKEN) {
+    console.log('   ℹ️  Dashboard notification skipped (no recordId or accessToken)');
+    return;
+  }
+  try {
+    const response = await fetch(`${DASHBOARD_URL}/api/mossos/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId, pdfBase64, filename, accessToken: GOOGLE_ACCESS_TOKEN })
+    });
+    if (response.ok) {
+      console.log('   📊 Dashboard notificado');
+    } else {
+      console.warn(`   ⚠️  Dashboard notification failed (${response.status})`);
+    }
+  } catch(e) {
+    console.warn('Dashboard notification error:', e.message);
   }
 }
 
@@ -218,6 +242,13 @@ async function uploadToMossos(filePath) {
         }
       } else {
         console.log('   ℹ️  No se encontró enlace de comprobante en la página');
+      }
+
+      // Notify dashboard with PDF
+      if (pdfPath && RECORD_ID && GOOGLE_ACCESS_TOKEN) {
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const pdfBase64 = pdfBuffer.toString('base64');
+        await notifyDashboard(RECORD_ID, pdfBase64, path.basename(pdfPath));
       }
 
       const tgMsg = pdfPath
