@@ -244,11 +244,11 @@ async function uploadToMossos(filePath) {
         console.log('   ℹ️  No se encontró enlace de comprobante en la página');
       }
 
-      // Notify dashboard with PDF
-      if (pdfPath && RECORD_ID && GOOGLE_ACCESS_TOKEN) {
-        const pdfBuffer = fs.readFileSync(pdfPath);
-        const pdfBase64 = pdfBuffer.toString('base64');
-        await notifyDashboard(RECORD_ID, pdfBase64, path.basename(pdfPath));
+      // Notify dashboard (with or without PDF)
+      if (RECORD_ID && GOOGLE_ACCESS_TOKEN) {
+        const pdfBase64 = pdfPath ? fs.readFileSync(pdfPath).toString('base64') : null;
+        const pdfFilename = pdfPath ? path.basename(pdfPath) : null;
+        await notifyDashboard(RECORD_ID, pdfBase64, pdfFilename);
       }
 
       const tgMsg = pdfPath
