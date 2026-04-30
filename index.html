@@ -806,6 +806,7 @@ function getKey() { return _AK; }
 const _TG_TOKEN = '__TELEGRAM_BOT_TOKEN__';
 const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
 const _GH_PAT   = '__GH_DISPATCH_PAT__';
+const _DASHBOARD_URL = 'https://checkin-dashboard-eight.vercel.app';
 function initKey() {
   document.getElementById('api-banner').style.display = 'none';
 }
@@ -1500,6 +1501,32 @@ function doDownload() {
   URL.revokeObjectURL(url);
   sendTelegramNotification(fname, blob);
   triggerMossosUpload(fname);
+  notifyDashboard(fname, normalized);
+}
+
+async function notifyDashboard(fname, normalizedContent) {
+  if (!_DASHBOARD_URL || _DASHBOARD_URL.startsWith('__')) return;
+  const allGuests = [...guestsList, readCurrentGuest()];
+  const code = v('f-reserva') || airbnbData.codigo || '';
+  if (!code) return;
+  try {
+    await fetch(`${_DASHBOARD_URL}/api/mossos/checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        airbnbCode: code.toUpperCase(),
+        txtContent: normalizedContent,
+        txtFilename: fname,
+        guestData: allGuests.map(g => ({
+          tipo: g[3], numdoc: g[1] || g[2], ap1: g[5], ap2: g[6], nom: g[7],
+          sexe: g[8], naix: g[9], nac: g[10], entrada: g[11], salida: g[13],
+          tel: g[22], email: g[24],
+        })),
+      })
+    });
+  } catch(e) {
+    console.warn('Dashboard notify failed:', e.message);
+  }
 }
 
 async function triggerMossosUpload(fname) {
