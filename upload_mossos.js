@@ -204,30 +204,29 @@ async function uploadToMossos(filePath) {
       let pdfPath = null;
 
       async function findComprovant() {
-        // Check main page first
-        const main = page.locator('a').filter({ hasText: /comprov|descarr|fitxer|justif/i });
-        if (await main.count() > 0) return { loc: main.first(), frame: null };
-        // Check all frames
-        for (const frame of page.frames()) {
+        const textRe = /comprov|descarr|fitxer|justif/i;
+        const hrefRe = 'fitxerViatgers';
+        // Check main page + all frames
+        const contexts = [page, ...page.frames()];
+        for (const ctx of contexts) {
           try {
-            const fl = frame.locator('a').filter({ hasText: /comprov|descarr|fitxer|justif/i });
-            if (await fl.count() > 0) return { loc: fl.first(), frame };
+            const byText = ctx.locator('a').filter({ hasText: textRe });
+            if (await byText.count() > 0) return byText.first();
           } catch (_) {}
         }
-        // Fallback: look for the known download URL directly in any frame
-        for (const frame of page.frames()) {
+        for (const ctx of contexts) {
           try {
-            const fl = frame.locator('a[href*="fitxerviatgers"], a[href*="comprov"], a[href*="descarr"]');
-            if (await fl.count() > 0) return { loc: fl.first(), frame };
+            const byHref = ctx.locator(`a[href*="${hrefRe}"], a[href*="comprov"], a[href*="descarr"]`);
+            if (await byHref.count() > 0) return byHref.first();
           } catch (_) {}
         }
         return null;
       }
 
-      const comprovantResult = await findComprovant();
+      const comprovantLoc = await findComprovant();
 
-      if (comprovantResult) {
-        const { loc } = comprovantResult;
+      if (comprovantLoc) {
+        const loc = comprovantLoc;
         const linkText    = await loc.textContent();
         const href        = await loc.getAttribute('href');
         const onclickAttr = await loc.getAttribute('onclick');
@@ -264,24 +263,25 @@ async function uploadToMossos(filePath) {
           }
         } else {
           // Last resort: try fetching the href directly using page context
-          if (href && href !== '#' && !href.startsWith('javascript')) {
-            try {
+          const fetchUrl = (href && href !== '#' && !href.startsWith('javascript'))
+            ? (href.startsWith('http') ? href.replace(/#$/, '') : `https://registreviatgers.mossos.gencat.cat${href.replace(/#$/, '')}`)
+            : 'https://registreviatgers.mossos.gencat.cat/mossos_hotels/AppJava/establiment/fitxerViatgers.do';
+          try {
               const buf = await page.evaluate(async (url) => {
                 const r = await fetch(url, { credentials: 'include' });
                 const ab = await r.arrayBuffer();
                 return Array.from(new Uint8Array(ab));
-              }, href.startsWith('http') ? href : `https://registreviatgers.mossos.gencat.cat${href}`);
+              }, fetchUrl);
               if (buf && buf.length > 500) {
                 pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
                 fs.writeFileSync(pdfPath, Buffer.from(buf));
                 console.log(`   📥 Comprovant (fetch directo): ${path.basename(pdfPath)}`);
+              } else {
+                console.warn('   ⚠️  Fetch directo sin PDF válido');
               }
             } catch(e) {
               console.warn('   ⚠️  Fetch directo falló:', e.message);
             }
-          } else {
-            console.warn('   ⚠️  Sin respuesta tras 16s');
-          }
         }
       } else {
         console.log('   ℹ️  No se encontró enlace de comprobante en la página');
