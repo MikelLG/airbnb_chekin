@@ -39,6 +39,7 @@ jobs:
           GOOGLE_ACCESS_TOKEN: ${{ github.event.client_payload.accessToken }}
           RECORD_ID: ${{ github.event.client_payload.recordId }}
           DASHBOARD_URL: ${{ github.event.client_payload.dashboardUrl }}
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
         run: node upload_mossos.js "${{ github.event.client_payload.filename }}"
 
       - name: Upload screenshots

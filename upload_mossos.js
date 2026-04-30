@@ -21,6 +21,7 @@ const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD;
 const GOOGLE_ACCESS_TOKEN = process.env.GOOGLE_ACCESS_TOKEN;
 const RECORD_ID = process.env.RECORD_ID;
 const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:3000';
+const VERCEL_BYPASS_SECRET = process.env.VERCEL_BYPASS_SECRET;
 
 async function sendEmail(subject, text, attachments = []) {
   if (!GMAIL_USER || !GMAIL_PASS) return;
@@ -76,9 +77,11 @@ async function notifyDashboard(recordId, pdfBase64, filename) {
   const url = `${DASHBOARD_URL}/api/mossos/complete`;
   console.log(`   📡 Notifying dashboard: ${url}`);
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (VERCEL_BYPASS_SECRET) headers['x-vercel-protection-bypass'] = VERCEL_BYPASS_SECRET;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ recordId, pdfBase64, filename, accessToken: GOOGLE_ACCESS_TOKEN }),
       redirect: 'manual',
     });
