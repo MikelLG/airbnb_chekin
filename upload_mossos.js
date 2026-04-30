@@ -200,31 +200,56 @@ async function uploadToMossos(filePath) {
     if (hasSuccess && !hasError) {
       console.log('\n✅✅✅ FICHERO ENVIADO CORRECTAMENTE A MOSSOS ✅✅✅');
 
-      // Download comprobante — href is '#', download triggered by JavaScript
-      const comprovant = page.locator('a').filter({ hasText: /comprov|descarr|download|pdf|justif/i });
+      // Download comprobante — search main page and all frames (old Java portal uses frames)
       let pdfPath = null;
-      if (await comprovant.count() > 0) {
-        const linkText  = await comprovant.first().textContent();
-        const onclickAttr = await comprovant.first().getAttribute('onclick');
-        console.log(`   🔗 "${linkText?.trim()}" onclick="${onclickAttr}"`);
+
+      async function findComprovant() {
+        // Check main page first
+        const main = page.locator('a').filter({ hasText: /comprov|descarr|fitxer|justif/i });
+        if (await main.count() > 0) return { loc: main.first(), frame: null };
+        // Check all frames
+        for (const frame of page.frames()) {
+          try {
+            const fl = frame.locator('a').filter({ hasText: /comprov|descarr|fitxer|justif/i });
+            if (await fl.count() > 0) return { loc: fl.first(), frame };
+          } catch (_) {}
+        }
+        // Fallback: look for the known download URL directly in any frame
+        for (const frame of page.frames()) {
+          try {
+            const fl = frame.locator('a[href*="fitxerviatgers"], a[href*="comprov"], a[href*="descarr"]');
+            if (await fl.count() > 0) return { loc: fl.first(), frame };
+          } catch (_) {}
+        }
+        return null;
+      }
+
+      const comprovantResult = await findComprovant();
+
+      if (comprovantResult) {
+        const { loc } = comprovantResult;
+        const linkText    = await loc.textContent();
+        const href        = await loc.getAttribute('href');
+        const onclickAttr = await loc.getAttribute('onclick');
+        console.log(`   🔗 "${linkText?.trim()}" href="${href}" onclick="${onclickAttr}"`);
 
         // Set up listeners BEFORE clicking
-        const downloadP = page.waitForEvent('download', { timeout: 12000 })
+        const downloadP = page.waitForEvent('download', { timeout: 15000 })
           .then(d => ({ type: 'download', data: d })).catch(() => null);
-        const newPageP  = page.context().waitForEvent('page', { timeout: 12000 })
+        const newPageP = page.context().waitForEvent('page', { timeout: 15000 })
           .then(p => ({ type: 'page', data: p })).catch(() => null);
 
-        await comprovant.first().click();
+        await loc.click();
 
-        const result = await Promise.race([downloadP, newPageP,
-          new Promise(r => setTimeout(() => r(null), 13000))]);
+        const dlResult = await Promise.race([downloadP, newPageP,
+          new Promise(r => setTimeout(() => r(null), 16000))]);
 
-        if (result?.type === 'download') {
+        if (dlResult?.type === 'download') {
           pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
-          await result.data.saveAs(pdfPath);
+          await dlResult.data.saveAs(pdfPath);
           console.log(`   📥 Comprovant (descarga directa): ${path.basename(pdfPath)}`);
-        } else if (result?.type === 'page') {
-          const newTab = result.data;
+        } else if (dlResult?.type === 'page') {
+          const newTab = dlResult.data;
           await newTab.waitForLoadState('networkidle').catch(() => {});
           const buf = await newTab.evaluate(() =>
             fetch(location.href).then(r => r.arrayBuffer()).then(b => Array.from(new Uint8Array(b)))
@@ -235,13 +260,34 @@ async function uploadToMossos(filePath) {
             fs.writeFileSync(pdfPath, Buffer.from(buf));
             console.log(`   📥 Comprovant (nueva pestaña): ${path.basename(pdfPath)}`);
           } else {
-            console.warn('   ⚠️  Nueva pestaña abierta pero sin PDF válido');
+            console.warn('   ⚠️  Nueva pestaña sin PDF válido');
           }
         } else {
-          console.warn('   ⚠️  Sin respuesta tras 13s — onclick:', onclickAttr);
+          // Last resort: try fetching the href directly using page context
+          if (href && href !== '#' && !href.startsWith('javascript')) {
+            try {
+              const buf = await page.evaluate(async (url) => {
+                const r = await fetch(url, { credentials: 'include' });
+                const ab = await r.arrayBuffer();
+                return Array.from(new Uint8Array(ab));
+              }, href.startsWith('http') ? href : `https://registreviatgers.mossos.gencat.cat${href}`);
+              if (buf && buf.length > 500) {
+                pdfPath = path.join(REGISTROS_DIR, 'comprovant_' + baseName + '.pdf');
+                fs.writeFileSync(pdfPath, Buffer.from(buf));
+                console.log(`   📥 Comprovant (fetch directo): ${path.basename(pdfPath)}`);
+              }
+            } catch(e) {
+              console.warn('   ⚠️  Fetch directo falló:', e.message);
+            }
+          } else {
+            console.warn('   ⚠️  Sin respuesta tras 16s');
+          }
         }
       } else {
         console.log('   ℹ️  No se encontró enlace de comprobante en la página');
+        // Log all links for debugging
+        const allLinks = await page.$$eval('a', els => els.map(e => `"${e.textContent.trim()}" → ${e.href}`).filter(t => t.length > 5));
+        console.log('   🔗 Links en página resultado:', allLinks);
       }
 
       // Notify dashboard (with or without PDF)
