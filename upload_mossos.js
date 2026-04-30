@@ -79,13 +79,18 @@ async function notifyDashboard(recordId, pdfBase64, filename) {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recordId, pdfBase64, filename, accessToken: GOOGLE_ACCESS_TOKEN })
+      body: JSON.stringify({ recordId, pdfBase64, filename, accessToken: GOOGLE_ACCESS_TOKEN }),
+      redirect: 'manual',
     });
     const text = await response.text();
-    if (response.ok) {
-      console.log('   📊 Dashboard notificado:', text);
+    const isHtml = text.trimStart().startsWith('<!') || text.trimStart().startsWith('<html');
+    if (response.type === 'opaqueredirect' || response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+      console.warn(`   ⚠️  Dashboard notification redirected (${response.status}) — possible Vercel auth protection. URL: ${url}`);
+    } else if (response.ok) {
+      console.log('   📊 Dashboard notificado:', isHtml ? '[HTML response — unexpected]' : text);
     } else {
-      console.warn(`   ⚠️  Dashboard notification failed (${response.status}): ${text}`);
+      const preview = isHtml ? `[HTML page — likely auth redirect or 404] status=${response.status}` : text.slice(0, 300);
+      console.warn(`   ⚠️  Dashboard notification failed (${response.status}): ${preview}`);
     }
   } catch(e) {
     console.warn('Dashboard notification error:', e.message);
