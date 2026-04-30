@@ -204,7 +204,7 @@ async function uploadToMossos(filePath) {
       let pdfPath = null;
 
       async function findComprovant() {
-        const textRe = /comprov|descarr|fitxer|justif/i;
+        const textRe = /comprobante|comprovant|descargar comprobante|descarregar comprovant/i;
         const hrefRe = 'fitxerViatgers';
         // Check main page + all frames
         const contexts = [page, ...page.frames()];
