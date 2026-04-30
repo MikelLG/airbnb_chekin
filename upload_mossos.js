@@ -69,20 +69,23 @@ async function tg(text, filePath) {
 }
 
 async function notifyDashboard(recordId, pdfBase64, filename) {
-  if (!RECORD_ID || !GOOGLE_ACCESS_TOKEN) {
-    console.log('   ℹ️  Dashboard notification skipped (no recordId or accessToken)');
+  if (!RECORD_ID) {
+    console.log('   ℹ️  Dashboard notification skipped (no recordId)');
     return;
   }
+  const url = `${DASHBOARD_URL}/api/mossos/complete`;
+  console.log(`   📡 Notifying dashboard: ${url}`);
   try {
-    const response = await fetch(`${DASHBOARD_URL}/api/mossos/complete`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recordId, pdfBase64, filename, accessToken: GOOGLE_ACCESS_TOKEN })
     });
+    const text = await response.text();
     if (response.ok) {
-      console.log('   📊 Dashboard notificado');
+      console.log('   📊 Dashboard notificado:', text);
     } else {
-      console.warn(`   ⚠️  Dashboard notification failed (${response.status})`);
+      console.warn(`   ⚠️  Dashboard notification failed (${response.status}): ${text}`);
     }
   } catch(e) {
     console.warn('Dashboard notification error:', e.message);
@@ -291,7 +294,7 @@ async function uploadToMossos(filePath) {
       }
 
       // Notify dashboard (with or without PDF)
-      if (RECORD_ID && GOOGLE_ACCESS_TOKEN) {
+      if (RECORD_ID) {
         const pdfBase64 = pdfPath ? fs.readFileSync(pdfPath).toString('base64') : null;
         const pdfFilename = pdfPath ? path.basename(pdfPath) : null;
         await notifyDashboard(RECORD_ID, pdfBase64, pdfFilename);
