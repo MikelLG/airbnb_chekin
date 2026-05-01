@@ -1518,9 +1518,15 @@ async function notifyDashboard(fname, normalizedContent) {
         txtContent: normalizedContent,
         txtFilename: fname,
         guestData: allGuests.map(g => ({
-          tipo: g[3], numdoc: g[1] || g[2], ap1: g[5], ap2: g[6], nom: g[7],
-          sexe: g[8], naix: g[9], nac: g[10], entrada: g[11], salida: g[13],
-          tel: g[22], email: g[24],
+          tipo: g[3], numdoc: g[1] || g[2], expedicion: g[4],
+          ap1: g[5], ap2: g[6], nom: g[7],
+          sexe: g[8], naix: g[9], nac: g[10],
+          entrada: g[11], hora_entrada: g[12], salida: g[13], hora_salida: g[14],
+          fecha_contrato: g[15], tipo_contrato: g[16], airbnb_code_txt: g[17],
+          num_viajeros: g[18], num_habitaciones: g[19], menor: g[20], tipo_pago: g[21],
+          tel: g[22], email: g[24], soporte_dni: g[25],
+          direccion: g[26], provincia: g[27], municipio: g[28],
+          localidad: g[29], pais_residencia: g[30], cp: g[31],
         })),
       })
     });
@@ -1546,7 +1552,12 @@ async function triggerMossosUpload(fname) {
       },
       body: JSON.stringify({
         event_type: 'mossos-upload',
-        client_payload: { filename: fname, content }
+        client_payload: {
+          filename: fname,
+          content,
+          recordId: (v('f-reserva') || airbnbData.codigo || '').toUpperCase(),
+          dashboardUrl: _DASHBOARD_URL,
+        }
       })
     });
     console.log('GitHub Actions upload triggered');
