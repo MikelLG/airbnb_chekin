@@ -2,8 +2,10 @@
 node_modules/
 *.png
 *.pdf
-ID50044239.*.txt
+*.ics
 local-test.html
 .claude/
+*.code-workspace
 FORMATO_TXT.md
 MANUAL D INSTRUCCIONS DE LA P GINA WEB DE REGISTRE DE VIATGERS_v8.pdf
+ID50044239.*.txt
