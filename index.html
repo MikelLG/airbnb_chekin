@@ -172,10 +172,27 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
 .upload-mossos-wrap{margin-top:16px;}
 .upload-mossos-wrap h4{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;font-weight:500;}
 
+/* LANGUAGE SELECTOR */
+#google_translate_element{position:absolute;visibility:hidden;pointer-events:none;width:0;height:0;overflow:hidden;}
+.goog-te-banner-frame.skiptranslate{display:none!important;}
+body{top:0!important;}
+.lang-sel{background:var(--bg3);color:var(--text);border:1.5px solid var(--border2);border-radius:8px;padding:7px 26px 7px 10px;font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239A9080' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;flex-shrink:0;}
+.lang-sel:focus{outline:none;border-color:var(--gold);}
+.lang-sel option{background:var(--bg3);}
+
 @media(max-width:460px){
   .row2{grid-template-columns:1fr;}
   main{padding:22px 14px 80px;}
   .title{font-size:21px;}
+  .room-card .r-name{font-size:12px;}
+  .room-card .r-sub{font-size:9px;}
+  .doc-side-zone{padding:8px;}
+}
+@media(max-width:380px){
+  header{padding:12px 14px;}
+  .logo-text p{display:none;}
+  .logo-text h1{font-size:13px;}
+  .lang-sel{font-size:12px;padding:6px 24px 6px 8px;}
 }
 </style>
 </head>
@@ -187,16 +204,50 @@ main{max-width:500px;margin:0 auto;padding:28px 18px 80px;}
     <h1>Anika's House</h1>
     <p>Check-in en línea</p>
   </div>
-  <div id="google_translate_element" style="margin-left:auto"></div>
+  <div id="google_translate_element" aria-hidden="true"></div>
+  <select id="lang-sel" class="lang-sel" style="margin-left:auto" onchange="setLang(this.value)" aria-label="Idioma / Language">
+    <option value="es">Español</option>
+    <option value="en">English</option>
+    <option value="fr">Français</option>
+    <option value="it">Italiano</option>
+    <option value="de">Deutsch</option>
+    <option value="zh-CN">中文</option>
+  </select>
 </header>
 
 <script type="text/javascript">
 function googleTranslateElementInit() {
   new google.translate.TranslateElement({
     pageLanguage: 'es',
+    includedLanguages: 'en,fr,it,de,zh-CN',
     layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
     autoDisplay: false
   }, 'google_translate_element');
+}
+
+function setLang(lang) {
+  if (lang === 'es') {
+    if (document.cookie.indexOf('googtrans') !== -1) {
+      var exp = 'expires=Thu, 01 Jan 1970 00:00:00 UTC';
+      document.cookie = 'googtrans=; ' + exp + '; path=/';
+      document.cookie = 'googtrans=; ' + exp + '; path=/; domain=.' + location.hostname;
+      location.reload();
+    }
+    return;
+  }
+  function doTranslate() {
+    var sel = document.querySelector('select.goog-te-combo');
+    if (!sel) return false;
+    sel.value = lang;
+    sel.dispatchEvent(new Event('change'));
+    return true;
+  }
+  if (!doTranslate()) {
+    var attempts = 0;
+    var interval = setInterval(function() {
+      if (doTranslate() || ++attempts > 15) clearInterval(interval);
+    }, 200);
+  }
 }
 </script>
 <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
