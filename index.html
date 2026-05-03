@@ -447,7 +447,7 @@ function setLang(lang) {
           <div class="field">
             <label><span class="req">*</span> Tipo documento</label>
             <select id="f-tipo" onchange="onTipoChange()">
-              <option value="D">DNI / NIF</option>
+              <option value="D">DNI / NIF (solo español)</option>
               <option value="P">Pasaporte</option>
               <option value="N">NIE</option>
               <option value="O">Otro (ID extranjero, etc.)</option>
@@ -490,7 +490,7 @@ function setLang(lang) {
         <div class="row2">
           <div class="field">
             <label>Nacionalidad</label>
-            <select id="f-nac">
+            <select id="f-nac" onchange="togglePostalFields()">
               <optgroup label="Más frecuentes">
                 <option value="ESP">España</option>
                 <option value="FRA">Francia</option>
@@ -672,7 +672,7 @@ function setLang(lang) {
         <div id="postal-esp">
           <div class="row2">
             <div class="field">
-              <label><span class="req">*</span> Provincia</label>
+              <label><span class="req" id="req-provincia">*</span> Provincia</label>
               <select id="f-provincia">
                 <option value="">— Selecciona —</option>
                 <option value="01">Álava</option>
@@ -766,7 +766,7 @@ function setLang(lang) {
           </div>
           <div class="field">
             <label>Hora entrada</label>
-            <input type="time" id="f-hora-in" value="15:00">
+            <input type="time" id="f-hora-in" value="16:00">
           </div>
         </div>
         <div class="row2">
@@ -776,7 +776,7 @@ function setLang(lang) {
           </div>
           <div class="field">
             <label>Hora salida</label>
-            <input type="time" id="f-hora-out" value="11:00">
+            <input type="time" id="f-hora-out" value="12:00">
           </div>
         </div>
         <div class="field">
@@ -801,12 +801,12 @@ function setLang(lang) {
     <div id="guest-progress" style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px;margin-bottom:4px"></div>
     <button class="btn btn-gold" id="btn-add-guest" onclick="saveGuestAndNext()" style="display:none">Añadir siguiente huésped →</button>
 
-    <label id="declaration-wrap" style="display:flex;align-items:flex-start;gap:10px;margin:18px 0 12px;cursor:pointer;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;padding:14px 16px">
-      <input type="checkbox" id="chk-declaration" onchange="document.getElementById('btn-generate').disabled=!this.checked" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);cursor:pointer">
+    <label id="declaration-wrap" style="display:flex;align-items:flex-start;gap:10px;margin:18px 0 12px;cursor:pointer;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;padding:14px 16px;transition:border-color .2s">
+      <input type="checkbox" id="chk-declaration" onchange="document.getElementById('declaration-wrap').style.borderColor=this.checked?'var(--border2)':'var(--border2)'" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);cursor:pointer">
       <span style="font-size:13px;color:var(--text2);line-height:1.5">Declaro que los datos introducidos son verídicos y corresponden a documentos de identidad válidos. Soy consciente de que la comunicación de datos falsos a las autoridades es un delito.</span>
     </label>
 
-    <button class="btn btn-gold" id="btn-generate" onclick="generateFile()" disabled>Finalizar →</button>
+    <button class="btn btn-gold" id="btn-generate" onclick="generateFile()">Finalizar →</button>
     <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
   </div>
 
@@ -950,6 +950,7 @@ function goStep(n) {
     document.getElementById('lbl-tel').innerHTML   = '<span class="req">*</span> ' + (isBaby ? 'Teléfono del padre/madre' : 'Teléfono');
     document.getElementById('lbl-email').innerHTML = '<span class="req">*</span> ' + (isBaby ? 'Email del padre/madre'    : 'Email');
     document.getElementById('lbl-contact-section').textContent = isBaby ? 'Contacto del padre/madre' : 'Contacto';
+    togglePostalFields();
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1143,6 +1144,7 @@ function togglePostalFields() {
   document.getElementById('postal-esp').style.display = isEsp ? 'block' : 'none';
   document.getElementById('postal-ext').style.display = isEsp ? 'none' : 'block';
   document.getElementById('postal-other-wrap').style.display = isOther ? 'block' : 'none';
+  document.getElementById('req-provincia').style.display = isEsp ? '' : 'none';
 }
 
 function skipAirbnb() {
@@ -1383,9 +1385,9 @@ function readCurrentGuest() {
     v('f-naix').replace(/-/g,''),
     (v('f-nac')||'ESP').toUpperCase(),
     entFmt,
-    (v('f-hora-in')||'15:00').replace(':',''),
+    (v('f-hora-in')||'16:00').replace(':',''),
     salFmt,
-    (v('f-hora-out')||'11:00').replace(':',''),
+    (v('f-hora-out')||'12:00').replace(':',''),
     contractDate,
     tipusContracte,
     (v('f-reserva')||'').toUpperCase(),
@@ -1447,10 +1449,15 @@ function checkDocExpiry() {
 
 function validateStep3() {
   hideErr('err-3');
+  document.getElementById('declaration-wrap').style.borderColor = '';
   const currentIsBaby = babyCount > 0 && guestsList.length >= adultCount;
   if (!v('f-numdoc')||!v('f-ap1')||!v('f-nom')) { showErr('err-3','Completa los datos del documento: número, apellido y nombre.'); return false; }
-  const fmtErr = validateDocFormat(v('f-tipo')||'D', v('f-numdoc')||'');
-  if (fmtErr) { showErr('err-3', `Formato de documento incorrecto. ${fmtErr}`); return false; }
+  const tipo = v('f-tipo') || 'D';
+  const fmtErr = validateDocFormat(tipo, v('f-numdoc')||'');
+  if (fmtErr) {
+    const extra = tipo === 'D' ? ' Si el documento no es español, selecciona "Otro" en tipo de documento.' : '';
+    showErr('err-3', `Formato de documento incorrecto. ${fmtErr}${extra}`); return false;
+  }
   if (!v('f-sexe')) { showErr('err-3','El sexo es obligatorio.'); return false; }
   if (!v('f-naix')) { showErr('err-3','La fecha de nacimiento es obligatoria.'); return false; }
   if (!v('f-exp')) { showErr('err-3','La fecha de expedición del documento es obligatoria.'); return false; }
@@ -1465,8 +1472,13 @@ function validateStep3() {
   const isEsp = paisPostalRaw === 'ESP';
   if (!v('f-adreca')) { showErr('err-3','La dirección de residencia es obligatoria (calle y número).'); return false; }
   if (!v('f-cp')) { showErr('err-3','El código postal de residencia es obligatorio.'); return false; }
-  if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia (código INE) es obligatoria.'); return false; }
+  if (isEsp && !v('f-provincia')) { showErr('err-3','La provincia es obligatoria para residentes en España.'); return false; }
   if (!isEsp && !v('f-loc')) { showErr('err-3','La localidad de residencia es obligatoria.'); return false; }
+  if (!document.getElementById('chk-declaration').checked) {
+    document.getElementById('declaration-wrap').style.borderColor = 'var(--err)';
+    showErr('err-3','Debes aceptar la declaración de veracidad antes de continuar.');
+    return false;
+  }
   return true;
 }
 
@@ -1688,7 +1700,7 @@ async function callClaudeVisionMulti(images, prompt) {
 // UTILS
 // ═══════════════════════════════════════════════════════════
 function v(id) { return (document.getElementById(id)?.value||'').trim(); }
-function showErr(id, msg) { const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; }
+function showErr(id, msg) { const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; window.scrollTo({top:0,behavior:'smooth'}); }
 function hideErr(id) { document.getElementById(id).style.display='none'; }
 function fmtDate(d) { return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); }
 function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0'); }
@@ -1721,8 +1733,8 @@ function resetAll() {
     el.classList.remove('ai');
   });
   document.getElementById('f-nviat').value='1';
-  document.getElementById('f-hora-in').value='15:00';
-  document.getElementById('f-hora-out').value='11:00';
+  document.getElementById('f-hora-in').value='16:00';
+  document.getElementById('f-hora-out').value='12:00';
   document.getElementById('f-pais').value='';
   togglePostalFields();
   document.getElementById('prog-wrap').style.display='block';
