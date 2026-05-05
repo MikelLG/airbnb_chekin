@@ -794,6 +794,19 @@ function setLang(lang) {
             <input type="email" id="f-email" placeholder="correo@ejemplo.com">
           </div>
         </div>
+        <div id="parentesco-wrap" style="display:none;margin-top:10px">
+          <div class="field">
+            <label><span class="req">*</span> Relación del menor con los adultos de la reserva</label>
+            <select id="f-parentesco">
+              <option value="HJ">Hijo/Hija</option>
+              <option value="HR">Hermano/Hermana</option>
+              <option value="NI">Nieto/Nieta</option>
+              <option value="SB">Sobrino/Sobrina</option>
+              <option value="TU">Tutor/Tutora</option>
+              <option value="OT">Otro</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1358,6 +1371,7 @@ function updateGuestButtons() {
   const btnGen = document.getElementById('btn-generate');
   btnGen.style.display = remaining > 0 ? 'none' : 'block';
   if (remaining <= 0) btnGen.disabled = false;
+  document.getElementById('parentesco-wrap').style.display = isBaby ? 'block' : 'none';
 }
 
 function readCurrentGuest() {
@@ -1398,7 +1412,7 @@ function readCurrentGuest() {
     (babyCount > 0 && guestsList.length >= adultCount) ? 'S' : 'N',
     'PLATF',
     telClean,
-    '',
+    (babyCount > 0 && guestsList.length >= adultCount) ? (v('f-parentesco') || 'HJ') : '',
     v('f-email')||'',
     (v('f-suport')||'').toUpperCase(),
     v('f-adreca')||'',
@@ -1492,7 +1506,7 @@ function saveGuestAndNext() {
   document.getElementById('doc-expired-warn').style.display = 'none';
   document.getElementById('chk-declaration').checked = false;
   document.getElementById('btn-generate').disabled = true;
-  ['f-tipo','f-numdoc','f-ap1','f-ap2','f-nom','f-sexe','f-naix','f-suport','f-exp','f-cad'].forEach(id => {
+  ['f-tipo','f-numdoc','f-ap1','f-ap2','f-nom','f-sexe','f-naix','f-suport','f-exp','f-cad','f-parentesco'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = el.tagName==='SELECT' ? el.options[0].value : ''; el.classList.remove('ai'); }
   });
@@ -1745,6 +1759,8 @@ function resetAll() {
   document.getElementById('doc-expired-warn').style.display='none';
   document.getElementById('chk-declaration').checked=false;
   document.getElementById('btn-generate').disabled=true;
+  document.getElementById('f-parentesco').value='HJ';
+  document.getElementById('parentesco-wrap').style.display='none';
   // Reset room selector
   selectedRoom = null;
   document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
