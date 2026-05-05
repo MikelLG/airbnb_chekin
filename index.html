@@ -1355,7 +1355,9 @@ function updateGuestButtons() {
   const prog = document.getElementById('guest-progress');
   prog.textContent = total > 1 ? `${label} ${labelNum} de ${total}` : '';
   document.getElementById('btn-add-guest').style.display = remaining > 0 ? 'block' : 'none';
-  document.getElementById('btn-generate').style.display = remaining > 0 ? 'none' : 'block';
+  const btnGen = document.getElementById('btn-generate');
+  btnGen.style.display = remaining > 0 ? 'none' : 'block';
+  if (remaining <= 0) btnGen.disabled = false;
 }
 
 function readCurrentGuest() {
