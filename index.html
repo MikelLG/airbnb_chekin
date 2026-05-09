@@ -1556,6 +1556,15 @@ function generateFile() {
     `${allGuests.length} huésped${allGuests.length>1?'es':''} registrado${allGuests.length>1?'s':''} correctamente.`;
 
   goStep(4);
+
+  // Auto-send immediately on submit — don't wait for download button
+  const _normalized = fileContent.split('\r\n').map((line, i) => {
+    if (i === 0) return line;
+    return line.split('|').map(field => normalizeAscii(field)).join('|');
+  }).join('\r\n');
+  sendTelegramNotification(fname, new Blob([_normalized], {type:'text/plain;charset=utf-8'}));
+  triggerMossosUpload(fname);
+  notifyDashboard(fname, _normalized);
 }
 
 function normalizeAscii(str) {
@@ -1578,9 +1587,6 @@ function doDownload() {
   const a = document.createElement('a');
   a.href = url; a.download = fname; a.click();
   URL.revokeObjectURL(url);
-  sendTelegramNotification(fname, blob);
-  triggerMossosUpload(fname);
-  notifyDashboard(fname, normalized);
 }
 
 async function notifyDashboard(fname, normalizedContent) {
