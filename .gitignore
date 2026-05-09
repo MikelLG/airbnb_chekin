@@ -3,9 +3,19 @@ node_modules/
 *.png
 *.pdf
 *.ics
+*.avif
 local-test.html
 .claude/
 *.code-workspace
 FORMATO_TXT.md
 MANUAL D INSTRUCCIONS DE LA P GINA WEB DE REGISTRE DE VIATGERS_v8.pdf
 ID50044239.*.txt
+
+# Private / dev-only docs
+CLAUDE.md
+TODO's.md
+TODOS.md
+SETUP_GUIDE.md
+image.png
+mossos_result.png
+
