@@ -827,17 +827,9 @@ function setLang(lang) {
   <div class="step" id="step-4">
     <div class="success-wrap">
       <div class="success-icon">✓</div>
-      <div class="title">¡Listo!</div>
-      <div class="subtitle">Fichero generado correctamente para los Mossos d'Esquadra.</div>
+      <div class="title">¡Gracias!</div>
+      <div class="subtitle">Tu check-in ha sido enviado correctamente. Disfruta de tu estancia.</div>
     </div>
-
-    <button class="download-card" id="btn-dl" onclick="doDownload()">
-      <span class="d-icon">⬇</span>
-      <span>
-        Descargar fichero
-        <span class="d-sub" id="dl-fname">ID50044239.001.txt</span>
-      </span>
-    </button>
 
     <button class="btn btn-out" onclick="resetAll()" style="margin-top:24px">+ Registrar otro huésped</button>
   </div>
@@ -1550,10 +1542,6 @@ function generateFile() {
   localStorage.setItem('mc', fileCounter);
   const seq = String(fileCounter % 999 || 999).padStart(3,'0');
   const fname = `${ESTAB.id}.${seq}.txt`;
-  document.getElementById('dl-fname').textContent = fname;
-  document.getElementById('btn-dl').dataset.fname = fname;
-  document.querySelector('#step-4 .subtitle').textContent =
-    `${allGuests.length} huésped${allGuests.length>1?'es':''} registrado${allGuests.length>1?'s':''} correctamente.`;
 
   goStep(4);
 
@@ -1576,18 +1564,6 @@ function normalizeAscii(str) {
     .toUpperCase();
 }
 
-function doDownload() {
-  const fname = document.getElementById('btn-dl').dataset.fname;
-  const normalized = fileContent.split('\r\n').map((line, i) => {
-    if (i === 0) return line; // header line unchanged
-    return line.split('|').map(field => normalizeAscii(field)).join('|');
-  }).join('\r\n');
-  const blob = new Blob([normalized], {type:'text/plain;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = fname; a.click();
-  URL.revokeObjectURL(url);
-}
 
 async function notifyDashboard(fname, normalizedContent) {
   if (!_DASHBOARD_URL || _DASHBOARD_URL.startsWith('__')) return;
