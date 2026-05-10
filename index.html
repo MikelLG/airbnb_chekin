@@ -845,6 +845,7 @@ function setLang(lang) {
       <div class="pay-row"><span>Noches</span><span id="pay-nights">—</span></div>
       <div class="pay-row"><span>Tasa por persona/noche</span><span>€1,75</span></div>
       <div class="pay-row" id="pay-cap-row" style="display:none"><span style="color:var(--gold);font-size:11px">Máx. 7 noches aplicado</span><span></span></div>
+      <div class="pay-row" id="pay-fee-row"><span style="font-size:11px;opacity:0.7">Comisión de gestión online</span><span id="pay-fee" style="font-size:11px;opacity:0.7">—</span></div>
       <div class="pay-row pay-total-row"><span>Total a pagar</span><span id="pay-total">—</span></div>
     </div>
 
@@ -1600,14 +1601,18 @@ function showPaymentStep(fname) {
   const rawNights = entrada && salida
     ? Math.max(1, Math.round((new Date(salida) - new Date(entrada)) / 86400000))
     : 1;
-  const nights  = Math.min(rawNights, 7);
-  const guests  = adultCount || 1;
-  const total   = guests * nights * TOURIST_TAX_RATE;
-  const amountCents = Math.round(total * 100);
+  const nights     = Math.min(rawNights, 7);
+  const guests     = adultCount || 1;
+  const netEur     = guests * nights * TOURIST_TAX_RATE;        // what host receives
+  const netCents   = Math.round(netEur * 100);
+  // Pass Stripe fee (1.5% + €0.25) to the guest: gross = (net + 25) / 0.985
+  const grossCents = Math.round((netCents + 25) / 0.985);
+  const feeEur     = (grossCents - netCents) / 100;
 
   document.getElementById('pay-guests').textContent = guests;
   document.getElementById('pay-nights').textContent = nights + (rawNights > 7 ? ` (de ${rawNights})` : '');
-  document.getElementById('pay-total').textContent  = `€${total.toFixed(2).replace('.', ',')}`;
+  document.getElementById('pay-fee').textContent    = `€${feeEur.toFixed(2).replace('.', ',')}`;
+  document.getElementById('pay-total').textContent  = `€${(grossCents / 100).toFixed(2).replace('.', ',')}`;
   document.getElementById('pay-cap-row').style.display = rawNights > 7 ? 'flex' : 'none';
 
   // Show step
@@ -1630,7 +1635,7 @@ function showPaymentStep(fname) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      amount: amountCents,
+      amount: grossCents,
       currency: 'eur',
       metadata: {
         fname,
