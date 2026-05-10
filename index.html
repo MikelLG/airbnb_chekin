@@ -180,6 +180,16 @@ body{top:0!important;}
 .lang-sel:focus{outline:none;border-color:var(--gold);}
 .lang-sel option{background:var(--bg3);}
 
+/* PAYMENT STEP */
+.pay-summary{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px;}
+.pay-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text2);}
+.pay-row:last-child{border:none;color:var(--text);font-weight:500;}
+.pay-row span:last-child{color:var(--text);}
+.pay-total-row span:last-child{color:var(--gold);font-size:17px;}
+#payment-element-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px;}
+#payment-element-wrap .card-label{margin-bottom:14px;}
+#payment-spinner{text-align:center;padding:20px 0;}
+
 @media(max-width:460px){
   .row2{grid-template-columns:1fr;}
   main{padding:22px 14px 80px;}
@@ -251,6 +261,7 @@ function setLang(lang) {
 }
 </script>
 <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script src="https://js.stripe.com/v3/"></script>
 
 <div class="prog-wrap" id="prog-wrap">
   <div class="prog-bar">
@@ -823,7 +834,31 @@ function setLang(lang) {
     <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
   </div>
 
-  <!-- ═══ PASO 4: ÉXITO ═══ -->
+  <!-- ═══ PASO 4: TASA TURÍSTICA ═══ -->
+  <div class="step" id="step-payment">
+    <div class="eyebrow">Casi listo</div>
+    <div class="title">Tasa turística</div>
+    <div class="subtitle">La normativa de Catalunya obliga a cobrar una tasa turística por estancia.</div>
+
+    <div class="pay-summary">
+      <div class="pay-row"><span>Huéspedes adultos</span><span id="pay-guests">—</span></div>
+      <div class="pay-row"><span>Noches</span><span id="pay-nights">—</span></div>
+      <div class="pay-row"><span>Tasa por persona/noche</span><span>€3,50</span></div>
+      <div class="pay-row pay-total-row"><span>Total a pagar</span><span id="pay-total">—</span></div>
+    </div>
+
+    <div id="payment-element-wrap">
+      <div class="card-label">Pago con tarjeta</div>
+      <div id="payment-spinner"><div class="spinner"></div></div>
+      <div id="payment-element"></div>
+    </div>
+
+    <div class="err" id="err-payment"></div>
+    <button class="btn btn-gold" id="btn-pay" onclick="submitPayment()" disabled>Pagar y finalizar →</button>
+    <button class="btn btn-out" onclick="goStep(3)" style="margin-top:8px">← Volver</button>
+  </div>
+
+  <!-- ═══ PASO 5: ÉXITO ═══ -->
   <div class="step" id="step-4">
     <div class="success-wrap">
       <div class="success-icon">✓</div>
@@ -863,6 +898,8 @@ const _TG_TOKEN = '__TELEGRAM_BOT_TOKEN__';
 const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
 const _GH_PAT   = '__GH_DISPATCH_PAT__';
 const _DASHBOARD_URL = 'https://checkin-dashboard-eight.vercel.app';
+const _STRIPE_PK = 'pk_test_51TVVpR2YrZitBtd6hNjLbgdVIRnwZE2euu7wvhRGo6lonyH41CpKm99cyK5KMP8KIMeCCnH2i9FR1Jaii9O9PIrW00d9yos8Mb';
+const TOURIST_TAX_RATE = 3.50; // € per adult per night (Catalunya rate)
 function initKey() {
   document.getElementById('api-banner').style.display = 'none';
 }
@@ -1543,9 +1580,105 @@ function generateFile() {
   const seq = String(fileCounter % 999 || 999).padStart(3,'0');
   const fname = `${ESTAB.id}.${seq}.txt`;
 
-  goStep(4);
+  showPaymentStep(fname);
+}
 
-  // Auto-send immediately on submit — don't wait for download button
+function showPaymentStep(fname) {
+  // Store fname for use after payment
+  window._pendingFname = fname;
+
+  // Calculate tax amount
+  const entrada = document.getElementById('f-entrada').value;
+  const salida  = document.getElementById('f-salida').value;
+  const nights  = entrada && salida
+    ? Math.max(1, Math.round((new Date(salida) - new Date(entrada)) / 86400000))
+    : 1;
+  const guests  = adultCount || 1;
+  const total   = guests * nights * TOURIST_TAX_RATE;
+  const amountCents = Math.round(total * 100);
+
+  document.getElementById('pay-guests').textContent = guests;
+  document.getElementById('pay-nights').textContent = nights;
+  document.getElementById('pay-total').textContent  = `€${total.toFixed(2).replace('.', ',')}`;
+
+  // Show step
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-payment').classList.add('active');
+  for (let i = 1; i <= 4; i++) document.getElementById('ps'+i).className = 'p-seg done';
+  document.getElementById('prog-label').textContent = 'Tasa turística';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Init Stripe Payment Element
+  window._stripeInstance = Stripe(_STRIPE_PK);
+  const spinner = document.getElementById('payment-spinner');
+  const payEl   = document.getElementById('payment-element');
+  const btnPay  = document.getElementById('btn-pay');
+  spinner.style.display = 'block';
+  payEl.innerHTML = '';
+  btnPay.disabled = true;
+
+  fetch(`${_DASHBOARD_URL}/api/stripe/create-payment-intent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      amount: amountCents,
+      currency: 'eur',
+      metadata: {
+        fname,
+        reserva: document.getElementById('f-reserva').value,
+        guests: String(guests),
+        nights: String(nights),
+      },
+    }),
+  })
+  .then(r => r.json())
+  .then(({ clientSecret, error }) => {
+    if (error) throw new Error(error);
+    const elements = window._stripeInstance.elements({ clientSecret, appearance: {
+      theme: 'night',
+      variables: { colorPrimary: '#C9A84C', colorBackground: '#242018', colorText: '#F0EBE0', borderRadius: '10px' },
+    }});
+    window._stripeElements = elements;
+    const pe = elements.create('payment');
+    pe.mount('#payment-element');
+    pe.on('ready', () => {
+      spinner.style.display = 'none';
+      btnPay.disabled = false;
+    });
+  })
+  .catch(err => {
+    spinner.style.display = 'none';
+    showErr('err-payment', `Error al preparar el pago: ${err.message}`);
+  });
+}
+
+async function submitPayment() {
+  const btn = document.getElementById('btn-pay');
+  btn.disabled = true;
+  btn.textContent = 'Procesando…';
+  document.getElementById('err-payment').style.display = 'none';
+
+  const { error, paymentIntent } = await window._stripeInstance.confirmPayment({
+    elements: window._stripeElements,
+    confirmParams: { return_url: window.location.href },
+    redirect: 'if_required',
+  });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Pagar y finalizar →';
+    showErr('err-payment', error.message);
+    return;
+  }
+
+  if (paymentIntent && paymentIntent.status === 'succeeded') {
+    completeCheckin();
+  }
+}
+
+function completeCheckin() {
+  const fname = window._pendingFname;
+  goStep(4);
   const _normalized = fileContent.split('\r\n').map((line, i) => {
     if (i === 0) return line;
     return line.split('|').map(field => normalizeAscii(field)).join('|');
