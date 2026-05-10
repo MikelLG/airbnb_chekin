@@ -843,7 +843,8 @@ function setLang(lang) {
     <div class="pay-summary">
       <div class="pay-row"><span>Huéspedes adultos</span><span id="pay-guests">—</span></div>
       <div class="pay-row"><span>Noches</span><span id="pay-nights">—</span></div>
-      <div class="pay-row"><span>Tasa por persona/noche</span><span>€3,50</span></div>
+      <div class="pay-row"><span>Tasa por persona/noche</span><span>€1,75</span></div>
+      <div class="pay-row" id="pay-cap-row" style="display:none"><span style="color:var(--gold);font-size:11px">Máx. 7 noches aplicado</span><span></span></div>
       <div class="pay-row pay-total-row"><span>Total a pagar</span><span id="pay-total">—</span></div>
     </div>
 
@@ -905,7 +906,7 @@ const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
 const _GH_PAT   = '__GH_DISPATCH_PAT__';
 const _DASHBOARD_URL = 'https://checkin-dashboard-eight.vercel.app';
 const _STRIPE_PK = 'pk_live_51TVVpBFGYGrhFltukuk6FYDe8uH9MjzV3VUkoR4Y96lb7vdHp0CbnIB2ezd0UUGgGBMJugpTl9Kmvde6hXrjHmYT004VtNYxOT';
-const TOURIST_TAX_RATE = 3.50; // € per adult per night (Catalunya rate)
+const TOURIST_TAX_RATE = 1.75; // € per adult per night (max 7 nights)
 function initKey() {
   document.getElementById('api-banner').style.display = 'none';
 }
@@ -1596,16 +1597,18 @@ function showPaymentStep(fname) {
   // Calculate tax amount
   const entrada = document.getElementById('f-entrada').value;
   const salida  = document.getElementById('f-salida').value;
-  const nights  = entrada && salida
+  const rawNights = entrada && salida
     ? Math.max(1, Math.round((new Date(salida) - new Date(entrada)) / 86400000))
     : 1;
+  const nights  = Math.min(rawNights, 7);
   const guests  = adultCount || 1;
   const total   = guests * nights * TOURIST_TAX_RATE;
   const amountCents = Math.round(total * 100);
 
   document.getElementById('pay-guests').textContent = guests;
-  document.getElementById('pay-nights').textContent = nights;
+  document.getElementById('pay-nights').textContent = nights + (rawNights > 7 ? ` (de ${rawNights})` : '');
   document.getElementById('pay-total').textContent  = `€${total.toFixed(2).replace('.', ',')}`;
+  document.getElementById('pay-cap-row').style.display = rawNights > 7 ? 'flex' : 'none';
 
   // Show step
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
