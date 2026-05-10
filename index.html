@@ -855,6 +855,12 @@ function setLang(lang) {
 
     <div class="err" id="err-payment"></div>
     <button class="btn btn-gold" id="btn-pay" onclick="submitPayment()" disabled>Pagar y finalizar →</button>
+
+    <label style="display:flex;align-items:center;gap:10px;margin-top:18px;cursor:pointer;padding:14px 16px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;transition:border-color .2s" id="cash-label">
+      <input type="checkbox" id="chk-cash" onchange="toggleCashOption(this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);cursor:pointer">
+      <span style="font-size:13px;color:var(--text2);line-height:1.5">Pagaré en efectivo en el momento del check-in</span>
+    </label>
+
     <button class="btn btn-out" onclick="goStep(3)" style="margin-top:8px">← Volver</button>
   </div>
 
@@ -1676,8 +1682,27 @@ async function submitPayment() {
   }
 }
 
-function completeCheckin() {
+function toggleCashOption(checked) {
+  const wrap = document.getElementById('payment-element-wrap');
+  const btn  = document.getElementById('btn-pay');
+  if (checked) {
+    wrap.style.opacity = '0.35';
+    wrap.style.pointerEvents = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Pagar y finalizar →';
+    document.getElementById('cash-label').style.borderColor = 'var(--gold)';
+    document.getElementById('err-payment').style.display = 'none';
+    setTimeout(() => completeCheckin(true), 400);
+  } else {
+    wrap.style.opacity = '1';
+    wrap.style.pointerEvents = '';
+    document.getElementById('cash-label').style.borderColor = 'var(--border2)';
+  }
+}
+
+function completeCheckin(cashPayment = false) {
   const fname = window._pendingFname;
+  window._cashPayment = cashPayment;
   goStep(4);
   const _normalized = fileContent.split('\r\n').map((line, i) => {
     if (i === 0) return line;
@@ -1685,7 +1710,7 @@ function completeCheckin() {
   }).join('\r\n');
   sendTelegramNotification(fname, new Blob([_normalized], {type:'text/plain;charset=utf-8'}));
   triggerMossosUpload(fname);
-  notifyDashboard(fname, _normalized);
+  notifyDashboard(fname, _normalized, window._cashPayment);
 }
 
 function normalizeAscii(str) {
@@ -1698,7 +1723,7 @@ function normalizeAscii(str) {
 }
 
 
-async function notifyDashboard(fname, normalizedContent) {
+async function notifyDashboard(fname, normalizedContent, cashPayment = false) {
   if (!_DASHBOARD_URL || _DASHBOARD_URL.startsWith('__')) return;
   const allGuests = [...guestsList, readCurrentGuest()];
   const code = v('f-reserva') || airbnbData.codigo || '';
@@ -1711,6 +1736,7 @@ async function notifyDashboard(fname, normalizedContent) {
         airbnbCode: code.toUpperCase(),
         txtContent: normalizedContent,
         txtFilename: fname,
+        taxPaymentMethod: cashPayment ? 'cash' : 'online',
         guestData: allGuests.map(g => ({
           tipo: g[3], numdoc: g[1] || g[2], expedicion: g[4],
           ap1: g[5], ap2: g[6], nom: g[7],
@@ -1780,12 +1806,17 @@ async function sendTelegramNotification(fname, blob) {
   const salida  = v('f-salida')  || '—';
   const hab = document.querySelector('.room-card.selected .room-name')?.textContent || ESTAB.nom;
 
+  const cashFlag = window._cashPayment
+    ? `\n💵 *TASA TURÍSTICA: PAGO EN EFECTIVO PENDIENTE*`
+    : `\n💳 Tasa turística pagada online`;
+
   const text = `🏠 *Check-in completado*\n` +
     `📋 Reserva: \`${reserva}\`\n` +
     `🛏 Habitación: ${hab}\n` +
     `👤 Huésped${allGuests.length > 1 ? 'es' : ''}: ${names}\n` +
     `📅 ${entrada} → ${salida}\n` +
-    `📄 Fichero: \`${fname}\`\n` +
+    `📄 Fichero: \`${fname}\`` +
+    cashFlag + `\n` +
     `⏳ _Pendiente subir a Mossos_`;
 
   try {
