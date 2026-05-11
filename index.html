@@ -908,6 +908,21 @@ const _GH_PAT   = '__GH_DISPATCH_PAT__';
 const _DASHBOARD_URL = 'https://checkin-dashboard-eight.vercel.app';
 const _STRIPE_PK = 'pk_live_51TVVpBFGYGrhFltukuk6FYDe8uH9MjzV3VUkoR4Y96lb7vdHp0CbnIB2ezd0UUGgGBMJugpTl9Kmvde6hXrjHmYT004VtNYxOT';
 const TOURIST_TAX_RATE = 1.75; // € per adult per night (max 7 nights)
+
+// Fetch property names and photos from dashboard and populate room cards
+(async function loadProperties() {
+  try {
+    const props = await fetch(`${_DASHBOARD_URL}/api/properties/public`).then(r => r.json());
+    if (!Array.isArray(props)) return;
+    props.forEach((prop, i) => {
+      const card = document.getElementById(`room-card-${i + 1}`);
+      if (!card) return;
+      if (prop.name) card.querySelector('.r-name').textContent = prop.name;
+      if (prop.photo_url) card.querySelector('img').src = prop.photo_url;
+    });
+  } catch (_) { /* keep hardcoded fallbacks on error */ }
+})();
+
 function initKey() {
   document.getElementById('api-banner').style.display = 'none';
 }
