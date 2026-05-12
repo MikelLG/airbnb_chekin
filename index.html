@@ -1375,7 +1375,7 @@ function fillStep3() {
     setAI('f-salida', airbnbData.salida);
     // Don't override guest count — user already set it in the guests step
     if (airbnbData.telefono) setAI('f-tel', airbnbData.telefono);
-    if (airbnbData.email) setAI('f-email', airbnbData.email);
+    if (airbnbData.email) { const m = airbnbData.email.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/); setAI('f-email', m ? m[0].toLowerCase() : airbnbData.email); }
     if (airbnbData.hora_entrada) setVal('f-hora-in', airbnbData.hora_entrada.slice(0,2)+':'+airbnbData.hora_entrada.slice(2,4));
     if (airbnbData.hora_salida) setVal('f-hora-out', airbnbData.hora_salida.slice(0,2)+':'+airbnbData.hora_salida.slice(2,4));
     document.getElementById('stay-ai-badge').style.display = 'inline-block';
@@ -1439,7 +1439,10 @@ function readCurrentGuest() {
   const isEsp = paisPostalRaw === 'ESP';
   const tipusContracte = entFmt >= fmtDate(now) ? 'R' : 'C';
   const contractDate = entFmt <= fmtDate(now) ? entFmt : fmtDate(now);
-  const telClean = (v('f-tel')||'').replace(/[^0-9]/g,'').slice(0,20);
+  const telClean   = (v('f-tel')||'').replace(/[^0-9]/g,'').slice(0,20);
+  const emailRaw   = v('f-email') || '';
+  const emailMatch = emailRaw.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+  const emailClean = emailMatch ? emailMatch[0].toLowerCase() : emailRaw;
   return [
     '2',
     tipo==='D' ? numdoc.toUpperCase() : '',
@@ -1465,7 +1468,7 @@ function readCurrentGuest() {
     'PLATF',
     telClean,
     (babyCount > 0 && guestsList.length >= adultCount) ? (v('f-parentesco') || 'HJ') : '',
-    v('f-email')||'',
+    emailClean,
     (v('f-suport')||'').toUpperCase(),
     v('f-adreca')||'',
     isEsp ? (v('f-provincia')||'') : '',
