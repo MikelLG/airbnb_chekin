@@ -1535,6 +1535,7 @@ function validateStep3() {
   if (!v('f-cad')) { showErr('err-3','La fecha de caducidad del documento es obligatoria.'); return false; }
   if (new Date(v('f-cad')) < new Date()) { showErr('err-3','El documento ha caducado. El huésped debe presentar un documento válido.'); return false; }
   if (!v('f-entrada')||!v('f-salida')||!v('f-reserva')) { showErr('err-3','Completa: fecha entrada, salida y número de reserva.'); return false; }
+  if (!/^HM[A-Z0-9]{7,}$/i.test(v('f-reserva'))) { showErr('err-3','El número de reserva no parece válido (debe empezar por HM y tener al menos 9 caracteres). Revísalo.'); return false; }
   if (!v('f-tel')) { showErr('err-3', currentIsBaby ? 'Introduce el teléfono del padre/madre.' : 'El teléfono es obligatorio.'); return false; }
   if (!v('f-email')) { showErr('err-3', currentIsBaby ? 'Introduce el email del padre/madre.' : 'El email es obligatorio.'); return false; }
   if (new Date(v('f-salida')) <= new Date(v('f-entrada'))) { showErr('err-3','La fecha de salida debe ser posterior a la de entrada.'); return false; }
