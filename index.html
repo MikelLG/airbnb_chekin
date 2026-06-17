@@ -214,7 +214,6 @@ body{top:0!important;}
     <h1>Anika's House</h1>
     <p>Check-in en línea</p>
   </div>
-  <div id="google_translate_element" aria-hidden="true"></div>
   <select id="lang-sel" class="lang-sel" style="margin-left:auto" onchange="setLang(this.value)" aria-label="Idioma / Language">
     <option value="es">Español</option>
     <option value="en">English</option>
@@ -225,42 +224,270 @@ body{top:0!important;}
   </select>
 </header>
 
-<script type="text/javascript">
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement({
-    pageLanguage: 'es',
-    includedLanguages: 'en,fr,it,de,zh-CN',
-    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-    autoDisplay: false
-  }, 'google_translate_element');
-}
+<script>
+const TRANSLATIONS = {
+  es:{
+    sl_1:'Reserva Airbnb',sl_2:'Foto del documento',sl_3:'Revisa los datos',sl_4:'¡Completado!',
+    prog_step:'Paso',prog_of:'de',
+    step1_ey:'Paso 1 de 4',step1_ttl:'Tu reserva',step1_sub:'Primero selecciona el alojamiento de tu reserva.',
+    step1_roomlbl:'¿En qué alojamiento te hospedas?',ical_loading:'Cargando reservas de Airbnb...',
+    sel_reserva:'Selecciona tu reserva',intro_manual:'Introducir manualmente',
+    res_selected:'Reserva seleccionada',lbl_codigo:'Código reserva',lbl_checkin:'Check-in',lbl_checkout:'Check-out',
+    btn_continue:'Continuar →',
+    sg_ttl:'¿Cuántas personas hay en la reserva?',
+    sg_sub:'Necesitarás escanear el DNI o pasaporte de cada persona mayor de 14 años.',
+    p1:'1 persona',p2:'2 personas',baby_q:'¿Algún bebé en la reserva?',btn_back:'← Volver',
+    step2_ey:'Paso 2 de 4',step2_ttl:'Foto del documento',
+    step2_sub:'Haz una foto a las dos caras del DNI o pasaporte. La IA leerá los datos automáticamente.',
+    step2_sub_baby:'Haz una foto al documento del bebé {n}.',
+    step2_sub_guest:'Haz una foto al DNI o pasaporte del huésped {n}.',
+    guest_lbl:'Huésped',baby_lbl:'Bebé',prog_of2:'de',
+    face_front:'Cara delantera',face_back:'Cara trasera',optional:'(opcional)',
+    btn_camera:'📷 Cámara',btn_gallery:'⬆ Galería',btn_scan:'Escanear documento →',btn_skip:'Saltar, introducir manualmente',
+    step3_ey:'Paso 3 de 4',step3_ttl:'Revisa los datos',
+    step3_sub:'Comprueba que todo está correcto. Los campos en verde se han rellenado automáticamente.',
+    lbl_doc:'Documento de identidad',lbl_tipodoc:'Tipo documento',
+    opt_dni:'DNI / NIF (solo español)',opt_pas:'Pasaporte',opt_nie:'NIE',opt_otro:'Otro (ID extranjero, etc.)',
+    lbl_numdoc:'Número',lbl_ap1:'Primer apellido',lbl_ap2:'Segundo apellido',lbl_nom:'Nombre',
+    lbl_sexe:'Sexo',opt_masc:'Masculino',opt_fem:'Femenino',opt_other_sex:'Otro',
+    lbl_naix:'Fecha nacimiento',lbl_nac:'Nacionalidad',lbl_suport:'Nº soporte',lbl_suport_hint:'(solo DNI/NIE)',
+    lbl_exp:'Fecha expedición doc',lbl_cad:'Fecha caducidad doc',
+    lbl_dir:'Dirección de residencia del huésped',lbl_adreca:'Calle y número',
+    lbl_pais:'País',lbl_cp:'Código postal',lbl_prov:'Provincia',lbl_mun:'Municipio (INE 6 dígitos)',lbl_loc:'Localidad',
+    lbl_pais_iso:'País (ISO-3)',
+    lbl_estancia:'Estancia',lbl_reserva:'Nº reserva Airbnb',
+    lbl_entrada:'Fecha entrada',lbl_hora_in:'Hora entrada',lbl_salida:'Fecha salida',lbl_hora_out:'Hora salida',
+    lbl_nviat:'Total huéspedes',lbl_contact:'Contacto',lbl_tel:'Teléfono',lbl_email:'Email',
+    lbl_tel_parent:'Teléfono del padre/madre',lbl_email_parent:'Email del padre/madre',lbl_contact_parent:'Contacto del padre/madre',
+    lbl_parentesco:'Relación del menor con los adultos de la reserva',
+    declaration:'Declaro que los datos introducidos son verídicos y corresponden a documentos de identidad válidos. Soy consciente de que la comunicación de datos falsos a las autoridades es un delito.',
+    btn_add_guest:'Añadir siguiente huésped →',btn_finish:'Finalizar →',
+    pay_ey:'Casi listo',pay_ttl:'Tasa turística',pay_sub:'La normativa de Catalunya obliga a cobrar una tasa turística por estancia.',
+    pay_guests:'Huéspedes adultos',pay_nights:'Noches',pay_rate:'Tasa por persona/noche',
+    pay_cap:'Máx. 7 noches aplicado',pay_fee:'Comisión de gestión online',pay_total:'Total a pagar',
+    pay_card:'Pago con tarjeta',pay_cash:'Pagaré en efectivo en el momento del check-in',btn_pay:'Pagar y finalizar →',
+    success_ttl:'¡Gracias!',success_sub:'Tu check-in ha sido enviado correctamente. Disfruta de tu estancia.',
+    btn_another:'+ Registrar otro huésped',
+    req_note:'Campo obligatorio · Nº soporte solo para DNI/NIE españoles',
+    privacy:'🔒 Tus datos se usan exclusivamente para el registro legal obligatorio (RD 933/2021).',
+    cam_tip:'Centra el documento dentro del marco',
+  },
+  en:{
+    sl_1:'Airbnb booking',sl_2:'Document photo',sl_3:'Review details',sl_4:'Completed!',
+    prog_step:'Step',prog_of:'of',
+    step1_ey:'Step 1 of 4',step1_ttl:'Your booking',step1_sub:'First select your accommodation.',
+    step1_roomlbl:'Which accommodation are you staying in?',ical_loading:'Loading Airbnb bookings...',
+    sel_reserva:'Select your booking',intro_manual:'Enter manually',
+    res_selected:'Selected booking',lbl_codigo:'Booking code',lbl_checkin:'Check-in',lbl_checkout:'Check-out',
+    btn_continue:'Continue →',
+    sg_ttl:'How many guests are in the booking?',
+    sg_sub:'You will need to scan the ID or passport of every guest over 14 years old.',
+    p1:'1 person',p2:'2 people',baby_q:'Any babies in the booking?',btn_back:'← Back',
+    step2_ey:'Step 2 of 4',step2_ttl:'Document photo',
+    step2_sub:'Take a photo of both sides of your ID or passport. AI will read the data automatically.',
+    step2_sub_baby:'Take a photo of baby {n}\'s document.',
+    step2_sub_guest:'Take a photo of guest {n}\'s ID or passport.',
+    guest_lbl:'Guest',baby_lbl:'Baby',prog_of2:'of',
+    face_front:'Front side',face_back:'Back side',optional:'(optional)',
+    btn_camera:'📷 Camera',btn_gallery:'⬆ Gallery',btn_scan:'Scan document →',btn_skip:'Skip, enter manually',
+    step3_ey:'Step 3 of 4',step3_ttl:'Review details',
+    step3_sub:'Check everything is correct. Green fields have been filled automatically.',
+    lbl_doc:'Identity document',lbl_tipodoc:'Document type',
+    opt_dni:'DNI / NIF (Spanish only)',opt_pas:'Passport',opt_nie:'NIE',opt_otro:'Other (foreign ID, etc.)',
+    lbl_numdoc:'Number',lbl_ap1:'First surname',lbl_ap2:'Second surname',lbl_nom:'First name',
+    lbl_sexe:'Sex',opt_masc:'Male',opt_fem:'Female',opt_other_sex:'Other',
+    lbl_naix:'Date of birth',lbl_nac:'Nationality',lbl_suport:'Support no.',lbl_suport_hint:'(DNI/NIE only)',
+    lbl_exp:'Document issue date',lbl_cad:'Document expiry date',
+    lbl_dir:'Guest home address',lbl_adreca:'Street and number',
+    lbl_pais:'Country',lbl_cp:'Postal code',lbl_prov:'Province',lbl_mun:'Municipality (INE 6 digits)',lbl_loc:'City',
+    lbl_pais_iso:'Country (ISO-3)',
+    lbl_estancia:'Stay',lbl_reserva:'Airbnb booking number',
+    lbl_entrada:'Check-in date',lbl_hora_in:'Check-in time',lbl_salida:'Check-out date',lbl_hora_out:'Check-out time',
+    lbl_nviat:'Total guests',lbl_contact:'Contact',lbl_tel:'Phone',lbl_email:'Email',
+    lbl_tel_parent:'Parent\'s phone',lbl_email_parent:'Parent\'s email',lbl_contact_parent:'Parent\'s contact',
+    lbl_parentesco:'Relationship of the minor to the adults in the booking',
+    declaration:'I declare that the data entered is truthful and corresponds to valid identity documents. I am aware that providing false information to authorities is a crime.',
+    btn_add_guest:'Add next guest →',btn_finish:'Finish →',
+    pay_ey:'Almost done',pay_ttl:'Tourist tax',pay_sub:'Catalan regulations require a tourist tax per stay.',
+    pay_guests:'Adult guests',pay_nights:'Nights',pay_rate:'Tax per person/night',
+    pay_cap:'Max. 7 nights applied',pay_fee:'Online management fee',pay_total:'Total to pay',
+    pay_card:'Card payment',pay_cash:'I will pay in cash at check-in',btn_pay:'Pay and finish →',
+    success_ttl:'Thank you!',success_sub:'Your check-in has been submitted successfully. Enjoy your stay.',
+    btn_another:'+ Register another guest',
+    req_note:'Required field · Support no. only for Spanish DNI/NIE',
+    privacy:'🔒 Your data is used exclusively for mandatory legal registration (RD 933/2021).',
+    cam_tip:'Centre the document within the frame',
+  },
+  fr:{
+    sl_1:'Réservation Airbnb',sl_2:'Photo du document',sl_3:'Vérifier les données',sl_4:'Terminé !',
+    prog_step:'Étape',prog_of:'sur',
+    step1_ey:'Étape 1 sur 4',step1_ttl:'Votre réservation',step1_sub:"Sélectionnez d'abord votre hébergement.",
+    step1_roomlbl:'Dans quel hébergement séjournez-vous ?',ical_loading:'Chargement des réservations Airbnb...',
+    sel_reserva:'Sélectionnez votre réservation',intro_manual:'Saisir manuellement',
+    res_selected:'Réservation sélectionnée',lbl_codigo:'Code de réservation',lbl_checkin:'Arrivée',lbl_checkout:'Départ',
+    btn_continue:'Continuer →',
+    sg_ttl:'Combien de personnes sont dans la réservation ?',
+    sg_sub:"Vous devrez scanner la pièce d'identité ou le passeport de chaque personne de plus de 14 ans.",
+    p1:'1 personne',p2:'2 personnes',baby_q:"Y a-t-il des bébés ?",btn_back:'← Retour',
+    step2_ey:'Étape 2 sur 4',step2_ttl:'Photo du document',
+    step2_sub:"Prenez une photo des deux côtés de votre pièce d'identité ou passeport. L'IA lira les données automatiquement.",
+    step2_sub_baby:'Prenez une photo du document du bébé {n}.',
+    step2_sub_guest:"Prenez une photo de la pièce d'identité du voyageur {n}.",
+    guest_lbl:'Voyageur',baby_lbl:'Bébé',prog_of2:'sur',
+    face_front:'Face avant',face_back:'Face arrière',optional:'(optionnel)',
+    btn_camera:'📷 Caméra',btn_gallery:'⬆ Galerie',btn_scan:'Scanner le document →',btn_skip:'Passer, saisir manuellement',
+    step3_ey:'Étape 3 sur 4',step3_ttl:'Vérifier les données',
+    step3_sub:'Vérifiez que tout est correct. Les champs verts ont été remplis automatiquement.',
+    lbl_doc:"Document d'identité",lbl_tipodoc:'Type de document',
+    opt_dni:'DNI / NIF (espagnol uniquement)',opt_pas:'Passeport',opt_nie:'NIE',opt_otro:"Autre (carte d'identité étrangère, etc.)",
+    lbl_numdoc:'Numéro',lbl_ap1:'Premier nom de famille',lbl_ap2:'Deuxième nom de famille',lbl_nom:'Prénom',
+    lbl_sexe:'Sexe',opt_masc:'Masculin',opt_fem:'Féminin',opt_other_sex:'Autre',
+    lbl_naix:'Date de naissance',lbl_nac:'Nationalité',lbl_suport:'N° support',lbl_suport_hint:'(DNI/NIE uniquement)',
+    lbl_exp:"Date d'émission du doc.",lbl_cad:"Date d'expiration du doc.",
+    lbl_dir:"Adresse de résidence du voyageur",lbl_adreca:'Rue et numéro',
+    lbl_pais:'Pays',lbl_cp:'Code postal',lbl_prov:'Province',lbl_mun:'Municipalité (INE 6 chiffres)',lbl_loc:'Ville',
+    lbl_pais_iso:'Pays (ISO-3)',
+    lbl_estancia:'Séjour',lbl_reserva:'N° de réservation Airbnb',
+    lbl_entrada:"Date d'arrivée",lbl_hora_in:"Heure d'arrivée",lbl_salida:'Date de départ',lbl_hora_out:'Heure de départ',
+    lbl_nviat:'Total voyageurs',lbl_contact:'Contact',lbl_tel:'Téléphone',lbl_email:'Email',
+    lbl_tel_parent:'Téléphone du parent',lbl_email_parent:'Email du parent',lbl_contact_parent:'Contact du parent',
+    lbl_parentesco:'Lien du mineur avec les adultes de la réservation',
+    declaration:"Je déclare que les données saisies sont véridiques et correspondent à des documents d'identité valides. Je suis conscient que la communication de fausses informations aux autorités est un délit.",
+    btn_add_guest:'Ajouter le voyageur suivant →',btn_finish:'Terminer →',
+    pay_ey:'Presque terminé',pay_ttl:'Taxe de séjour',pay_sub:'La réglementation catalane impose une taxe de séjour par séjour.',
+    pay_guests:'Voyageurs adultes',pay_nights:'Nuits',pay_rate:'Taxe par personne/nuit',
+    pay_cap:'Max. 7 nuits appliqué',pay_fee:'Commission de gestion en ligne',pay_total:'Total à payer',
+    pay_card:'Paiement par carte',pay_cash:"Je paierai en espèces à l'arrivée",btn_pay:'Payer et terminer →',
+    success_ttl:'Merci !',success_sub:'Votre check-in a été soumis avec succès. Profitez de votre séjour.',
+    btn_another:'+ Enregistrer un autre voyageur',
+    req_note:"Champ obligatoire · N° support uniquement pour DNI/NIE espagnol",
+    privacy:"🔒 Vos données sont utilisées exclusivement pour l'enregistrement légal obligatoire (RD 933/2021).",
+    cam_tip:'Centrez le document dans le cadre',
+  },
+  de:{
+    sl_1:'Airbnb-Buchung',sl_2:'Dokumentenfoto',sl_3:'Daten prüfen',sl_4:'Abgeschlossen!',
+    prog_step:'Schritt',prog_of:'von',
+    step1_ey:'Schritt 1 von 4',step1_ttl:'Ihre Buchung',step1_sub:'Wählen Sie zuerst Ihre Unterkunft aus.',
+    step1_roomlbl:'In welcher Unterkunft übernachten Sie?',ical_loading:'Airbnb-Buchungen werden geladen...',
+    sel_reserva:'Buchung auswählen',intro_manual:'Manuell eingeben',
+    res_selected:'Ausgewählte Buchung',lbl_codigo:'Buchungscode',lbl_checkin:'Check-in',lbl_checkout:'Check-out',
+    btn_continue:'Weiter →',
+    sg_ttl:'Wie viele Personen sind in der Buchung?',
+    sg_sub:'Sie müssen den Ausweis oder Reisepass jeder Person über 14 Jahren scannen.',
+    p1:'1 Person',p2:'2 Personen',baby_q:'Gibt es Babys in der Buchung?',btn_back:'← Zurück',
+    step2_ey:'Schritt 2 von 4',step2_ttl:'Dokumentenfoto',
+    step2_sub:'Fotografieren Sie beide Seiten Ihres Ausweises oder Reisepasses. Die KI liest die Daten automatisch.',
+    step2_sub_baby:'Fotografieren Sie das Dokument von Baby {n}.',
+    step2_sub_guest:'Fotografieren Sie den Ausweis oder Reisepass von Gast {n}.',
+    guest_lbl:'Gast',baby_lbl:'Baby',prog_of2:'von',
+    face_front:'Vorderseite',face_back:'Rückseite',optional:'(optional)',
+    btn_camera:'📷 Kamera',btn_gallery:'⬆ Galerie',btn_scan:'Dokument scannen →',btn_skip:'Überspringen, manuell eingeben',
+    step3_ey:'Schritt 3 von 4',step3_ttl:'Daten prüfen',
+    step3_sub:'Überprüfen Sie, ob alles korrekt ist. Grüne Felder wurden automatisch ausgefüllt.',
+    lbl_doc:'Identitätsdokument',lbl_tipodoc:'Dokumententyp',
+    opt_dni:'DNI / NIF (nur Spanisch)',opt_pas:'Reisepass',opt_nie:'NIE',opt_otro:'Sonstiges (ausländischer Ausweis, etc.)',
+    lbl_numdoc:'Nummer',lbl_ap1:'Erster Nachname',lbl_ap2:'Zweiter Nachname',lbl_nom:'Vorname',
+    lbl_sexe:'Geschlecht',opt_masc:'Männlich',opt_fem:'Weiblich',opt_other_sex:'Sonstiges',
+    lbl_naix:'Geburtsdatum',lbl_nac:'Staatsangehörigkeit',lbl_suport:'Support-Nr.',lbl_suport_hint:'(nur DNI/NIE)',
+    lbl_exp:'Ausstellungsdatum Dokument',lbl_cad:'Ablaufdatum Dokument',
+    lbl_dir:'Wohnadresse des Gastes',lbl_adreca:'Straße und Hausnummer',
+    lbl_pais:'Land',lbl_cp:'Postleitzahl',lbl_prov:'Provinz',lbl_mun:'Gemeinde (INE 6 Stellen)',lbl_loc:'Stadt',
+    lbl_pais_iso:'Land (ISO-3)',
+    lbl_estancia:'Aufenthalt',lbl_reserva:'Airbnb-Buchungsnummer',
+    lbl_entrada:'Ankunftsdatum',lbl_hora_in:'Ankunftszeit',lbl_salida:'Abreisedatum',lbl_hora_out:'Abreisezeit',
+    lbl_nviat:'Gäste gesamt',lbl_contact:'Kontakt',lbl_tel:'Telefon',lbl_email:'E-Mail',
+    lbl_tel_parent:'Telefon des Elternteils',lbl_email_parent:'E-Mail des Elternteils',lbl_contact_parent:'Kontakt des Elternteils',
+    lbl_parentesco:'Beziehung des Minderjährigen zu den Erwachsenen in der Buchung',
+    declaration:'Ich erkläre, dass die eingegebenen Daten wahrheitsgemäß sind und gültigen Ausweisdokumenten entsprechen. Mir ist bewusst, dass die Übermittlung falscher Informationen an Behörden strafbar ist.',
+    btn_add_guest:'Nächsten Gast hinzufügen →',btn_finish:'Abschließen →',
+    pay_ey:'Fast fertig',pay_ttl:'Touristensteuer',pay_sub:'Die katalanischen Vorschriften verlangen eine Touristensteuer pro Aufenthalt.',
+    pay_guests:'Erwachsene Gäste',pay_nights:'Nächte',pay_rate:'Steuer pro Person/Nacht',
+    pay_cap:'Max. 7 Nächte angewendet',pay_fee:'Online-Verwaltungsgebühr',pay_total:'Gesamtbetrag',
+    pay_card:'Kartenzahlung',pay_cash:'Ich zahle beim Check-in in bar',btn_pay:'Zahlen und abschließen →',
+    success_ttl:'Vielen Dank!',success_sub:'Ihr Check-in wurde erfolgreich eingereicht. Genießen Sie Ihren Aufenthalt.',
+    btn_another:'+ Weiteren Gast registrieren',
+    req_note:'Pflichtfeld · Support-Nr. nur für spanische DNI/NIE',
+    privacy:'🔒 Ihre Daten werden ausschließlich für die gesetzlich vorgeschriebene Anmeldung verwendet (RD 933/2021).',
+    cam_tip:'Zentrieren Sie das Dokument im Rahmen',
+  },
+  it:{
+    sl_1:'Prenotazione Airbnb',sl_2:'Foto del documento',sl_3:'Verifica dati',sl_4:'Completato!',
+    prog_step:'Passo',prog_of:'di',
+    step1_ey:'Passo 1 di 4',step1_ttl:'La tua prenotazione',step1_sub:'Seleziona prima il tuo alloggio.',
+    step1_roomlbl:'In quale alloggio soggiorni?',ical_loading:'Caricamento prenotazioni Airbnb...',
+    sel_reserva:'Seleziona la tua prenotazione',intro_manual:'Inserire manualmente',
+    res_selected:'Prenotazione selezionata',lbl_codigo:'Codice prenotazione',lbl_checkin:'Check-in',lbl_checkout:'Check-out',
+    btn_continue:'Continua →',
+    sg_ttl:'Quante persone ci sono nella prenotazione?',
+    sg_sub:"Dovrai scansionare il documento d'identità o il passaporto di ogni persona over 14 anni.",
+    p1:'1 persona',p2:'2 persone',baby_q:'Ci sono bambini piccoli?',btn_back:'← Indietro',
+    step2_ey:'Passo 2 di 4',step2_ttl:'Foto del documento',
+    step2_sub:"Scatta una foto di entrambi i lati del tuo documento d'identità o passaporto. L'IA leggerà i dati automaticamente.",
+    step2_sub_baby:'Scatta una foto del documento del bambino {n}.',
+    step2_sub_guest:"Scatta una foto del documento d'identità dell'ospite {n}.",
+    guest_lbl:'Ospite',baby_lbl:'Bambino',prog_of2:'di',
+    face_front:'Fronte',face_back:'Retro',optional:'(opzionale)',
+    btn_camera:'📷 Fotocamera',btn_gallery:'⬆ Galleria',btn_scan:'Scansiona documento →',btn_skip:'Salta, inserire manualmente',
+    step3_ey:'Passo 3 di 4',step3_ttl:'Verifica dati',
+    step3_sub:'Controlla che tutto sia corretto. I campi verdi sono stati compilati automaticamente.',
+    lbl_doc:"Documento d'identità",lbl_tipodoc:'Tipo documento',
+    opt_dni:'DNI / NIF (solo spagnolo)',opt_pas:'Passaporto',opt_nie:'NIE',opt_otro:'Altro (documento straniero, ecc.)',
+    lbl_numdoc:'Numero',lbl_ap1:'Primo cognome',lbl_ap2:'Secondo cognome',lbl_nom:'Nome',
+    lbl_sexe:'Sesso',opt_masc:'Maschile',opt_fem:'Femminile',opt_other_sex:'Altro',
+    lbl_naix:'Data di nascita',lbl_nac:'Nazionalità',lbl_suport:'N° supporto',lbl_suport_hint:'(solo DNI/NIE)',
+    lbl_exp:'Data di emissione doc.',lbl_cad:'Data di scadenza doc.',
+    lbl_dir:"Indirizzo di residenza dell'ospite",lbl_adreca:'Via e numero',
+    lbl_pais:'Paese',lbl_cp:'Codice postale',lbl_prov:'Provincia',lbl_mun:'Comune (INE 6 cifre)',lbl_loc:'Città',
+    lbl_pais_iso:'Paese (ISO-3)',
+    lbl_estancia:'Soggiorno',lbl_reserva:'N° prenotazione Airbnb',
+    lbl_entrada:'Data di arrivo',lbl_hora_in:"Ora di arrivo",lbl_salida:'Data di partenza',lbl_hora_out:'Ora di partenza',
+    lbl_nviat:'Ospiti totali',lbl_contact:'Contatto',lbl_tel:'Telefono',lbl_email:'Email',
+    lbl_tel_parent:'Telefono del genitore',lbl_email_parent:'Email del genitore',lbl_contact_parent:'Contatto del genitore',
+    lbl_parentesco:'Relazione del minore con gli adulti della prenotazione',
+    declaration:"Dichiaro che i dati inseriti sono veritieri e corrispondono a documenti d'identità validi. Sono consapevole che la comunicazione di dati falsi alle autorità è un reato.",
+    btn_add_guest:"Aggiungi l'ospite successivo →",btn_finish:'Termina →',
+    pay_ey:'Quasi finito',pay_ttl:'Tassa turistica',pay_sub:'La normativa catalana richiede una tassa turistica per soggiorno.',
+    pay_guests:'Ospiti adulti',pay_nights:'Notti',pay_rate:'Tassa per persona/notte',
+    pay_cap:'Max. 7 notti applicate',pay_fee:'Commissione di gestione online',pay_total:'Totale da pagare',
+    pay_card:'Pagamento con carta',pay_cash:'Pagherò in contanti al check-in',btn_pay:'Paga e termina →',
+    success_ttl:'Grazie!',success_sub:'Il tuo check-in è stato inviato con successo. Buon soggiorno.',
+    btn_another:'+ Registra un altro ospite',
+    req_note:'Campo obbligatorio · N° supporto solo per DNI/NIE spagnolo',
+    privacy:"🔒 I tuoi dati sono utilizzati esclusivamente per la registrazione legale obbligatoria (RD 933/2021).",
+    cam_tip:'Centrate il documento nel riquadro',
+  },
+};
+
+let currentLang = 'es';
+function t(k) { return (TRANSLATIONS[currentLang]||{})[k] || TRANSLATIONS.es[k] || k; }
 
 function setLang(lang) {
-  if (lang === 'es') {
-    if (document.cookie.indexOf('googtrans') !== -1) {
-      var exp = 'expires=Thu, 01 Jan 1970 00:00:00 UTC';
-      document.cookie = 'googtrans=; ' + exp + '; path=/';
-      document.cookie = 'googtrans=; ' + exp + '; path=/; domain=.' + location.hostname;
-      location.reload();
-    }
-    return;
-  }
-  function doTranslate() {
-    var sel = document.querySelector('select.goog-te-combo');
-    if (!sel) return false;
-    sel.value = lang;
-    sel.dispatchEvent(new Event('change'));
-    return true;
-  }
-  if (!doTranslate()) {
-    var attempts = 0;
-    var interval = setInterval(function() {
-      if (doTranslate() || ++attempts > 15) clearInterval(interval);
-    }, 200);
+  currentLang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  const sels = [
+    ['#step-1 .eyebrow','step1_ey'],['#step-1 .title','step1_ttl'],['#step-1 .subtitle','step1_sub'],
+    ['#step-guests .eyebrow','step1_ey'],['#step-guests .title','sg_ttl'],['#step-guests .subtitle','sg_sub'],
+    ['#step-2 .eyebrow','step2_ey'],['#step2-title','step2_ttl'],['#step2-subtitle','step2_sub'],
+    ['#step-3 .eyebrow','step3_ey'],['#step-3 .title','step3_ttl'],['#step-3 .subtitle','step3_sub'],
+    ['#step-payment .eyebrow','pay_ey'],['#step-payment .title','pay_ttl'],['#step-payment .subtitle','pay_sub'],
+    ['#step-4 .title','success_ttl'],['#step-4 .subtitle','success_sub'],
+    ['#btn-next-1','btn_continue'],['#btn-confirm-guests','btn_continue'],
+    ['#btn-extract-dni','btn_scan'],['#btn-generate','btn_finish'],
+    ['#btn-add-guest','btn_add_guest'],['#btn-pay','btn_pay'],
+    ['#lbl-contact-section','lbl_contact'],['#cam-tip','cam_tip'],
+  ];
+  sels.forEach(([sel,key]) => { const el=document.querySelector(sel); if(el) el.textContent=t(key); });
+  const tel = document.getElementById('lbl-tel');
+  if(tel) { const req=tel.querySelector('.req'); tel.textContent=''; if(req) tel.appendChild(req); tel.appendChild(document.createTextNode(' '+t('lbl_tel'))); }
+  const email = document.getElementById('lbl-email');
+  if(email) { const req=email.querySelector('.req'); email.textContent=''; if(req) email.appendChild(req); email.appendChild(document.createTextNode(' '+t('lbl_email'))); }
+  const progEl = document.getElementById('prog-label');
+  if(progEl && progEl.dataset.stepN) {
+    const n = progEl.dataset.stepN;
+    progEl.textContent = n === 'pay' ? t('pay_ttl') : `${t('prog_step')} ${n} ${t('prog_of')} 4 — ${t('sl_'+n)}`;
   }
 }
 </script>
-<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 <script src="https://js.stripe.com/v3/"></script>
 
 <div class="prog-wrap" id="prog-wrap">
@@ -290,7 +517,7 @@ function setLang(lang) {
 
     <!-- ROOM SELECTOR -->
     <div id="room-selector">
-      <div class="card-label" style="margin-bottom:10px">¿En qué alojamiento te hospedas?</div>
+      <div class="card-label" style="margin-bottom:10px" data-i18n="step1_roomlbl">¿En qué alojamiento te hospedas?</div>
       <div class="room-grid">
         <div class="room-card" id="room-card-1" onclick="selectRoom(1)">
           <img src="Hab1.avif" alt="Habitación 1">
@@ -313,21 +540,21 @@ function setLang(lang) {
     <div class="card" id="ical-loading" style="display:none">
       <div style="text-align:center;padding:20px 0">
         <div class="spinner"></div>
-        <div class="extract-status">Cargando reservas de Airbnb...</div>
+        <div class="extract-status" data-i18n="ical_loading">Cargando reservas de Airbnb...</div>
       </div>
     </div>
 
     <div id="ical-list" style="display:none">
-      <div class="card-label" style="margin-bottom:10px">Selecciona tu reserva</div>
+      <div class="card-label" style="margin-bottom:10px" data-i18n="sel_reserva">Selecciona tu reserva</div>
       <div id="reservations-list"></div>
-      <button class="btn btn-out" onclick="skipAirbnb()" style="margin-top:8px">Introducir manualmente</button>
+      <button class="btn btn-out" onclick="skipAirbnb()" style="margin-top:8px" data-i18n="intro_manual">Introducir manualmente</button>
     </div>
 
     <div class="airbnb-result" id="airbnb-result">
-      <div class="card-label" style="margin-bottom:8px">Reserva seleccionada</div>
-      <div class="airbnb-row"><span>Código reserva</span><span id="ar-codigo">—</span></div>
-      <div class="airbnb-row"><span>Check-in</span><span id="ar-entrada">—</span></div>
-      <div class="airbnb-row"><span>Check-out</span><span id="ar-salida">—</span></div>
+      <div class="card-label" style="margin-bottom:8px" data-i18n="res_selected">Reserva seleccionada</div>
+      <div class="airbnb-row"><span data-i18n="lbl_codigo">Código reserva</span><span id="ar-codigo">—</span></div>
+      <div class="airbnb-row"><span data-i18n="lbl_checkin">Check-in</span><span id="ar-entrada">—</span></div>
+      <div class="airbnb-row"><span data-i18n="lbl_checkout">Check-out</span><span id="ar-salida">—</span></div>
       <div class="airbnb-row" style="display:none"><span>Huéspedes</span><span id="ar-num">—</span></div>
     </div>
 
@@ -342,14 +569,14 @@ function setLang(lang) {
     <div class="title">¿Cuántas personas hay en la reserva?</div>
     <div class="subtitle">Necesitarás escanear el DNI o pasaporte de cada persona mayor de 14 años.</div>
     <div id="guest-count-btns" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:28px 0;">
-      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(1,this)">1 persona</button>
-      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(2,this)">2 personas</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(1,this)" data-i18n="p1">1 persona</button>
+      <button class="btn btn-out guest-num-btn" onclick="selectGuestCount(2,this)" data-i18n="p2">2 personas</button>
     </div>
 
     <div id="baby-section-wrap" style="display:none;margin-top:20px">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
         <input type="checkbox" id="chk-baby" onchange="toggleBabySection(this.checked)" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer">
-        <span style="font-size:15px">¿Algún bebé en la reserva?</span>
+        <span style="font-size:15px" data-i18n="baby_q">¿Algún bebé en la reserva?</span>
       </label>
       <div id="baby-count-row" style="display:none;margin-top:12px;padding-left:28px;font-size:14px;color:var(--text2)">
         <span>1 bebé</span><span id="baby-extra" style="display:none"> · 2 en total</span>
@@ -360,7 +587,7 @@ function setLang(lang) {
     </div>
 
     <button class="btn btn-gold" id="btn-confirm-guests" onclick="confirmGuestCount()" style="display:none">Continuar →</button>
-    <button class="btn btn-out" style="margin-top:8px" onclick="goStep(1)">← Volver</button>
+    <button class="btn btn-out" style="margin-top:8px" onclick="goStep(1)" data-i18n="btn_back">← Volver</button>
   </div>
 
   <!-- ═══ PASO 2: FOTO DNI ═══ -->
@@ -370,7 +597,7 @@ function setLang(lang) {
     <div class="subtitle" id="step2-subtitle">Haz una foto a las dos caras del DNI o pasaporte. La IA leerá los datos automáticamente.</div>
 
     <div class="err" id="err-2"></div>
-    <div class="info">🔒 Tus datos se usan exclusivamente para el registro legal obligatorio (RD 933/2021).</div>
+    <div class="info" data-i18n="privacy">🔒 Tus datos se usan exclusivamente para el registro legal obligatorio (RD 933/2021).</div>
 
     <!-- Shared camera viewfinder -->
     <div class="cam-wrap" id="cam-wrap" style="display:none">
@@ -394,7 +621,7 @@ function setLang(lang) {
     <div style="display:flex;gap:12px;margin-top:10px">
       <!-- FRONT -->
       <div class="doc-side-zone" id="zone-front">
-        <div class="doc-side-label">Cara delantera <span class="req">*</span></div>
+        <div class="doc-side-label"><span data-i18n="face_front">Cara delantera</span> <span class="req">*</span></div>
         <div class="preview-box" style="margin:8px 0">
           <img id="preview-front" alt="Cara delantera" style="display:none">
           <div id="placeholder-front" class="doc-placeholder">📄</div>
@@ -402,11 +629,11 @@ function setLang(lang) {
         </div>
         <div class="side-btns">
           <label class="btn btn-dark" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
-            📷 Cámara
+            <span data-i18n="btn_camera">📷 Cámara</span>
             <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFileSide(this.files[0],'front');this.value=''">
           </label>
           <label class="btn btn-out" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
-            ⬆ Galería
+            <span data-i18n="btn_gallery">⬆ Galería</span>
             <input type="file" accept="image/*" style="display:none" onchange="handleFileSide(this.files[0],'front');this.value=''">
           </label>
         </div>
@@ -414,7 +641,7 @@ function setLang(lang) {
 
       <!-- BACK -->
       <div class="doc-side-zone" id="zone-back">
-        <div class="doc-side-label">Cara trasera <span style="font-size:10px;color:var(--text3)">(opcional)</span></div>
+        <div class="doc-side-label"><span data-i18n="face_back">Cara trasera</span> <span style="font-size:10px;color:var(--text3)" data-i18n="optional">(opcional)</span></div>
         <div class="preview-box" style="margin:8px 0">
           <img id="preview-back" alt="Cara trasera" style="display:none">
           <div id="placeholder-back" class="doc-placeholder">📄</div>
@@ -422,11 +649,11 @@ function setLang(lang) {
         </div>
         <div class="side-btns">
           <label class="btn btn-dark" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
-            📷 Cámara
+            <span data-i18n="btn_camera">📷 Cámara</span>
             <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFileSide(this.files[0],'back');this.value=''">
           </label>
           <label class="btn btn-out" style="font-size:12px;padding:8px 10px;cursor:pointer;margin:0">
-            ⬆ Galería
+            <span data-i18n="btn_gallery">⬆ Galería</span>
             <input type="file" accept="image/*" style="display:none" onchange="handleFileSide(this.files[0],'back');this.value=''">
           </label>
         </div>
@@ -434,8 +661,8 @@ function setLang(lang) {
     </div>
 
     <button class="btn btn-gold" id="btn-extract-dni" onclick="extractDNI()" disabled style="margin-top:16px">Escanear documento →</button>
-    <button class="btn btn-out" onclick="fillStep3();goStep(3)">Saltar, introducir manualmente</button>
-    <button class="btn btn-out" style="margin-top:4px" onclick="goStepGuests()">← Volver</button>
+    <button class="btn btn-out" onclick="fillStep3();goStep(3)" data-i18n="btn_skip">Saltar, introducir manualmente</button>
+    <button class="btn btn-out" style="margin-top:4px" onclick="goStepGuests()" data-i18n="btn_back">← Volver</button>
   </div>
 
   <!-- ═══ PASO 3: DATOS ═══ -->
@@ -452,55 +679,55 @@ function setLang(lang) {
 
     <!-- Datos documento -->
     <div class="card">
-      <div class="card-label">Documento de identidad <span class="ai-badge" id="doc-ai-badge" style="display:none">IA</span></div>
+      <div class="card-label"><span data-i18n="lbl_doc">Documento de identidad</span> <span class="ai-badge" id="doc-ai-badge" style="display:none">IA</span></div>
       <div class="form-grid">
         <div class="row2">
           <div class="field">
-            <label><span class="req">*</span> Tipo documento</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_tipodoc">Tipo documento</span></label>
             <select id="f-tipo" onchange="onTipoChange()">
-              <option value="D">DNI / NIF (solo español)</option>
-              <option value="P">Pasaporte</option>
-              <option value="N">NIE</option>
-              <option value="O">Otro (ID extranjero, etc.)</option>
+              <option value="D" data-i18n="opt_dni">DNI / NIF (solo español)</option>
+              <option value="P" data-i18n="opt_pas">Pasaporte</option>
+              <option value="N" data-i18n="opt_nie">NIE</option>
+              <option value="O" data-i18n="opt_otro">Otro (ID extranjero, etc.)</option>
             </select>
           </div>
           <div class="field">
-            <label><span class="req">*</span> Número</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_numdoc">Número</span></label>
             <input type="text" id="f-numdoc" placeholder="12345678A">
           </div>
         </div>
         <div class="row2">
           <div class="field">
-            <label><span class="req">*</span> Primer apellido</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_ap1">Primer apellido</span></label>
             <input type="text" id="f-ap1" placeholder="García">
           </div>
           <div class="field">
-            <label>Segundo apellido</label>
+            <label data-i18n="lbl_ap2">Segundo apellido</label>
             <input type="text" id="f-ap2" placeholder="López">
           </div>
         </div>
         <div class="field">
-          <label><span class="req">*</span> Nombre</label>
+          <label><span class="req">*</span> <span data-i18n="lbl_nom">Nombre</span></label>
           <input type="text" id="f-nom" placeholder="María">
         </div>
         <div class="row2">
           <div class="field">
-            <label><span class="req">*</span> Sexo</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_sexe">Sexo</span></label>
             <select id="f-sexe">
               <option value="">— Selecciona —</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
-              <option value="O">Otro</option>
+              <option value="M" data-i18n="opt_masc">Masculino</option>
+              <option value="F" data-i18n="opt_fem">Femenino</option>
+              <option value="O" data-i18n="opt_other_sex">Otro</option>
             </select>
           </div>
           <div class="field">
-            <label><span class="req">*</span> Fecha nacimiento</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_naix">Fecha nacimiento</span></label>
             <input type="date" id="f-naix">
           </div>
         </div>
         <div class="row2">
           <div class="field">
-            <label>Nacionalidad</label>
+            <label data-i18n="lbl_nac">Nacionalidad</label>
             <select id="f-nac" onchange="togglePostalFields()">
               <optgroup label="Más frecuentes">
                 <option value="ESP">España</option>
@@ -616,17 +843,17 @@ function setLang(lang) {
             </select>
           </div>
           <div class="field">
-            <label>Nº soporte <span style="color:var(--text3);font-size:9px">(solo DNI/NIE)</span></label>
+            <label><span data-i18n="lbl_suport">Nº soporte</span> <span style="color:var(--text3);font-size:9px" data-i18n="lbl_suport_hint">(solo DNI/NIE)</span></label>
             <input type="text" id="f-suport" placeholder="AAA123456" maxlength="9">
           </div>
         </div>
         <div class="row2">
           <div class="field">
-            <label><span class="req">*</span> Fecha expedición doc</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_exp">Fecha expedición doc</span></label>
             <input type="date" id="f-exp">
           </div>
           <div class="field">
-            <label><span class="req">*</span> Fecha caducidad doc</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_cad">Fecha caducidad doc</span></label>
             <input type="date" id="f-cad" oninput="checkDocExpiry()">
           </div>
         </div>
@@ -638,15 +865,15 @@ function setLang(lang) {
 
     <!-- Dirección postal -->
     <div class="card">
-      <div class="card-label">Dirección de residencia del huésped <span class="req">*</span></div>
+      <div class="card-label"><span data-i18n="lbl_dir">Dirección de residencia del huésped</span> <span class="req">*</span></div>
       <div class="form-grid">
         <div class="field">
-          <label><span class="req">*</span> Calle y número</label>
+          <label><span class="req">*</span> <span data-i18n="lbl_adreca">Calle y número</span></label>
           <input type="text" id="f-adreca" placeholder="Calle Mayor 10, 3º 2ª">
         </div>
         <div class="row2">
           <div class="field">
-            <label>País</label>
+            <label data-i18n="lbl_pais">País</label>
             <select id="f-pais" onchange="togglePostalFields()">
               <option value="">— Igual que nacionalidad —</option>
               <option value="ESP">España</option>
@@ -675,7 +902,7 @@ function setLang(lang) {
             </select>
           </div>
           <div class="field">
-            <label><span class="req">*</span> Código postal</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_cp">Código postal</span></label>
             <input type="text" id="f-cp" placeholder="08001" maxlength="20">
           </div>
         </div>
@@ -683,7 +910,7 @@ function setLang(lang) {
         <div id="postal-esp">
           <div class="row2">
             <div class="field">
-              <label><span class="req" id="req-provincia">*</span> Provincia</label>
+              <label><span class="req" id="req-provincia">*</span> <span data-i18n="lbl_prov">Provincia</span></label>
               <select id="f-provincia">
                 <option value="">— Selecciona —</option>
                 <option value="01">Álava</option>
@@ -741,7 +968,7 @@ function setLang(lang) {
               </select>
             </div>
             <div class="field">
-              <label>Municipio (INE 6 dígitos)</label>
+              <label data-i18n="lbl_mun">Municipio (INE 6 dígitos)</label>
               <input type="text" id="f-municipi" placeholder="080193" maxlength="6">
             </div>
           </div>
@@ -750,11 +977,11 @@ function setLang(lang) {
         <div id="postal-ext" style="display:none">
           <div class="row2">
             <div class="field">
-              <label><span class="req">*</span> Localidad</label>
+              <label><span class="req">*</span> <span data-i18n="lbl_loc">Localidad</span></label>
               <input type="text" id="f-loc" placeholder="London">
             </div>
             <div class="field" id="postal-other-wrap" style="display:none">
-              <label>País (ISO-3)</label>
+              <label data-i18n="lbl_pais_iso">País (ISO-3)</label>
               <input type="text" id="f-pais-other" placeholder="GBR" maxlength="3" style="text-transform:uppercase">
             </div>
           </div>
@@ -764,34 +991,34 @@ function setLang(lang) {
 
     <!-- Datos estancia -->
     <div class="card">
-      <div class="card-label">Estancia <span class="ai-badge" id="stay-ai-badge" style="display:none">Airbnb</span></div>
+      <div class="card-label"><span data-i18n="lbl_estancia">Estancia</span> <span class="ai-badge" id="stay-ai-badge" style="display:none">Airbnb</span></div>
       <div class="form-grid">
         <div class="field">
-          <label><span class="req">*</span> Nº reserva Airbnb</label>
+          <label><span class="req">*</span> <span data-i18n="lbl_reserva">Nº reserva Airbnb</span></label>
           <input type="text" id="f-reserva" placeholder="HMXXXXXXXX">
         </div>
         <div class="row2">
           <div class="field">
-            <label><span class="req">*</span> Fecha entrada</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_entrada">Fecha entrada</span></label>
             <input type="date" id="f-entrada">
           </div>
           <div class="field">
-            <label>Hora entrada</label>
+            <label data-i18n="lbl_hora_in">Hora entrada</label>
             <input type="time" id="f-hora-in" value="16:00">
           </div>
         </div>
         <div class="row2">
           <div class="field">
-            <label><span class="req">*</span> Fecha salida</label>
+            <label><span class="req">*</span> <span data-i18n="lbl_salida">Fecha salida</span></label>
             <input type="date" id="f-salida">
           </div>
           <div class="field">
-            <label>Hora salida</label>
+            <label data-i18n="lbl_hora_out">Hora salida</label>
             <input type="time" id="f-hora-out" value="12:00">
           </div>
         </div>
         <div class="field">
-          <label>Total huéspedes</label>
+          <label data-i18n="lbl_nviat">Total huéspedes</label>
           <input type="number" id="f-nviat" value="1" min="1" max="20" oninput="updateGuestButtons()">
         </div>
         <div class="card-label" style="margin-top:4px;margin-bottom:8px"><span class="req">*</span> <span id="lbl-contact-section">Contacto</span></div>
@@ -827,11 +1054,11 @@ function setLang(lang) {
 
     <label id="declaration-wrap" style="display:flex;align-items:flex-start;gap:10px;margin:18px 0 12px;cursor:pointer;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;padding:14px 16px;transition:border-color .2s">
       <input type="checkbox" id="chk-declaration" onchange="document.getElementById('declaration-wrap').style.borderColor=this.checked?'var(--border2)':'var(--border2)'" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);cursor:pointer">
-      <span style="font-size:13px;color:var(--text2);line-height:1.5">Declaro que los datos introducidos son verídicos y corresponden a documentos de identidad válidos. Soy consciente de que la comunicación de datos falsos a las autoridades es un delito.</span>
+      <span style="font-size:13px;color:var(--text2);line-height:1.5" data-i18n="declaration">Declaro que los datos introducidos son verídicos y corresponden a documentos de identidad válidos. Soy consciente de que la comunicación de datos falsos a las autoridades es un delito.</span>
     </label>
 
     <button class="btn btn-gold" id="btn-generate" onclick="generateFile()">Finalizar →</button>
-    <button class="btn btn-out" onclick="goStep(2)">← Volver</button>
+    <button class="btn btn-out" onclick="goStep(2)" data-i18n="btn_back">← Volver</button>
   </div>
 
   <!-- ═══ PASO 4: TASA TURÍSTICA ═══ -->
@@ -841,16 +1068,16 @@ function setLang(lang) {
     <div class="subtitle">La normativa de Catalunya obliga a cobrar una tasa turística por estancia.</div>
 
     <div class="pay-summary">
-      <div class="pay-row"><span>Huéspedes adultos</span><span id="pay-guests">—</span></div>
-      <div class="pay-row"><span>Noches</span><span id="pay-nights">—</span></div>
-      <div class="pay-row"><span>Tasa por persona/noche</span><span>€1,75</span></div>
-      <div class="pay-row" id="pay-cap-row" style="display:none"><span style="color:var(--gold);font-size:11px">Máx. 7 noches aplicado</span><span></span></div>
-      <div class="pay-row" id="pay-fee-row"><span style="font-size:11px;opacity:0.7">Comisión de gestión online</span><span id="pay-fee" style="font-size:11px;opacity:0.7">—</span></div>
-      <div class="pay-row pay-total-row"><span>Total a pagar</span><span id="pay-total">—</span></div>
+      <div class="pay-row"><span data-i18n="pay_guests">Huéspedes adultos</span><span id="pay-guests">—</span></div>
+      <div class="pay-row"><span data-i18n="pay_nights">Noches</span><span id="pay-nights">—</span></div>
+      <div class="pay-row"><span data-i18n="pay_rate">Tasa por persona/noche</span><span>€1,75</span></div>
+      <div class="pay-row" id="pay-cap-row" style="display:none"><span style="color:var(--gold);font-size:11px" data-i18n="pay_cap">Máx. 7 noches aplicado</span><span></span></div>
+      <div class="pay-row" id="pay-fee-row"><span style="font-size:11px;opacity:0.7" data-i18n="pay_fee">Comisión de gestión online</span><span id="pay-fee" style="font-size:11px;opacity:0.7">—</span></div>
+      <div class="pay-row pay-total-row"><span data-i18n="pay_total">Total a pagar</span><span id="pay-total">—</span></div>
     </div>
 
     <div id="payment-element-wrap">
-      <div class="card-label">Pago con tarjeta</div>
+      <div class="card-label" data-i18n="pay_card">Pago con tarjeta</div>
       <div id="payment-spinner"><div class="spinner"></div></div>
       <div id="payment-element"></div>
     </div>
@@ -860,10 +1087,10 @@ function setLang(lang) {
 
     <label style="display:flex;align-items:center;gap:10px;margin-top:18px;cursor:pointer;padding:14px 16px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;transition:border-color .2s" id="cash-label">
       <input type="checkbox" id="chk-cash" onchange="toggleCashOption(this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);cursor:pointer">
-      <span style="font-size:13px;color:var(--text2);line-height:1.5">Pagaré en efectivo en el momento del check-in</span>
+      <span style="font-size:13px;color:var(--text2);line-height:1.5" data-i18n="pay_cash">Pagaré en efectivo en el momento del check-in</span>
     </label>
 
-    <button class="btn btn-out" onclick="goStep(3)" style="margin-top:8px">← Volver</button>
+    <button class="btn btn-out" onclick="goStep(3)" style="margin-top:8px" data-i18n="btn_back">← Volver</button>
   </div>
 
   <!-- ═══ PASO 5: ÉXITO ═══ -->
@@ -874,7 +1101,7 @@ function setLang(lang) {
       <div class="subtitle">Tu check-in ha sido enviado correctamente. Disfruta de tu estancia.</div>
     </div>
 
-    <button class="btn btn-out" onclick="resetAll()" style="margin-top:24px">+ Registrar otro huésped</button>
+    <button class="btn btn-out" onclick="resetAll()" style="margin-top:24px" data-i18n="btn_another">+ Registrar otro huésped</button>
   </div>
 
 </main>
@@ -930,11 +1157,10 @@ function initKey() {
 // ═══════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
-const stepLabels = ['','Reserva Airbnb','Foto del documento','Revisa los datos','¡Completado!'];
 function goStepGuests() {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById('step-guests').classList.add('active');
-  document.getElementById('prog-label').textContent = 'Paso 1 de 4 — Reserva Airbnb';
+  const pl=document.getElementById('prog-label'); pl.dataset.stepN='1'; pl.textContent=`${t('prog_step')} 1 ${t('prog_of')} 4 — ${t('sl_1')}`;
   // Reset baby section to clean state
   adultCount = 1; babyCount = 0;
   document.getElementById('baby-section-wrap').style.display = 'none';
@@ -993,28 +1219,28 @@ function goStep(n) {
     const el = document.getElementById('ps'+i);
     el.className = 'p-seg' + (i<n?' done':i===n?' cur':'');
   }
-  document.getElementById('prog-label').textContent = `Paso ${n} de 4 — ${stepLabels[n]}`;
+  const pl=document.getElementById('prog-label'); pl.dataset.stepN=n; pl.textContent=`${t('prog_step')} ${n} ${t('prog_of')} 4 — ${t('sl_'+n)}`;
   if (n===4) document.getElementById('prog-wrap').style.display='none';
   if (n===2) {
     const total = parseInt(document.getElementById('f-nviat').value) || 1;
     const done = guestsList.length;
     const isBaby = babyCount > 0 && done >= adultCount;
-    const label = isBaby ? 'Bebé' : 'Huésped';
+    const label = isBaby ? t('baby_lbl') : t('guest_lbl');
     const labelNum = isBaby ? done - adultCount + 1 : done + 1;
     document.getElementById('step2-title').textContent = total > 1
-      ? `Foto del documento — ${label} ${labelNum} de ${total}`
-      : 'Foto del documento';
+      ? `${t('step2_ttl')} — ${label} ${labelNum} ${t('prog_of2')} ${total}`
+      : t('step2_ttl');
     document.getElementById('step2-subtitle').textContent = isBaby
-      ? `Haz una foto al documento del bebé ${labelNum}.`
+      ? t('step2_sub_baby').replace('{n}', labelNum)
       : total > 1
-        ? `Haz una foto al DNI o pasaporte del huésped ${labelNum}.`
-        : 'Haz una foto a tu DNI o pasaporte. La IA leerá los datos automáticamente.';
+        ? t('step2_sub_guest').replace('{n}', labelNum)
+        : t('step2_sub');
   }
   if (n===3) {
     const isBaby = babyCount > 0 && guestsList.length >= adultCount;
-    document.getElementById('lbl-tel').innerHTML   = '<span class="req">*</span> ' + (isBaby ? 'Teléfono del padre/madre' : 'Teléfono');
-    document.getElementById('lbl-email').innerHTML = '<span class="req">*</span> ' + (isBaby ? 'Email del padre/madre'    : 'Email');
-    document.getElementById('lbl-contact-section').textContent = isBaby ? 'Contacto del padre/madre' : 'Contacto';
+    document.getElementById('lbl-tel').innerHTML   = '<span class="req">*</span> ' + (isBaby ? t('lbl_tel_parent') : t('lbl_tel'));
+    document.getElementById('lbl-email').innerHTML = '<span class="req">*</span> ' + (isBaby ? t('lbl_email_parent') : t('lbl_email'));
+    document.getElementById('lbl-contact-section').textContent = isBaby ? t('lbl_contact_parent') : t('lbl_contact');
     togglePostalFields();
   }
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1638,7 +1864,7 @@ function showPaymentStep(fname) {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById('step-payment').classList.add('active');
   for (let i = 1; i <= 4; i++) document.getElementById('ps'+i).className = 'p-seg done';
-  document.getElementById('prog-label').textContent = 'Tasa turística';
+  const plp=document.getElementById('prog-label'); plp.dataset.stepN='pay'; plp.textContent=t('pay_ttl');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Init Stripe Payment Element
