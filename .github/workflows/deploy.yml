@@ -15,8 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inject Gemini API Key into index.html
-        run: sed -i "s/__GOOGLE_GEMINI_API_KEY__/${{ secrets.GOOGLE_GEMINI_API_KEY }}/g" index.html
+      - name: Inject secrets into index.html
+        run: |
+          sed -i "s/__GOOGLE_GEMINI_API_KEY__/${{ secrets.GOOGLE_GEMINI_API_KEY }}/g" index.html
+          sed -i "s|__ICAL_URL__|${{ secrets.AIRBNB_ICAL_URL }}|g" index.html
+          sed -i "s|__ICAL_URL_2__|${{ secrets.AIRBNB_ICAL_URL_2 }}|g" index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
