@@ -5,7 +5,7 @@ Anika's House - ID50044239
 
 Uso:
   python mossos_generator.py                    # Modo interactivo (introducir datos manualmente)
-  python mossos_generator.py --foto dni.jpg     # Extrae datos de foto DNI via Claude Vision
+  python mossos_generator.py --foto dni.jpg     # Extrae datos de foto DNI via Google Gemini Vision
   python mossos_generator.py --listar           # Lista ficheros generados
 """
 
@@ -210,7 +210,7 @@ def input_manual():
 
     return viatgers
 
-# ─── EXTRACCIÓN VIA CLAUDE VISION ────────────────────────────────────────────
+# ─── EXTRACCIÓN VIA GOOGLE GEMINI VISION ────────────────────────────────────────────
 def extract_from_photo(image_path: str):
     try:
         import urllib.request
@@ -246,43 +246,37 @@ Responde SOLO con un JSON válido con estos campos exactos (usa "" si no encuent
 No incluyas ningún texto adicional, solo el JSON."""
 
     payload = json.dumps({
-        "model": "claude-sonnet-4-6",
-        "max_tokens": 1000,
-        "messages": [{
-            "role": "user",
-            "content": [
+        "contents": [{
+            "parts": [
                 {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": media_type,
+                    "inlineData": {
+                        "mimeType": media_type,
                         "data": image_data
                     }
                 },
-                {"type": "text", "text": prompt}
+                {"text": prompt}
             ]
         }]
     }).encode("utf-8")
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = os.environ.get("GOOGLE_GEMINI_API_KEY", "")
     if not api_key:
-        print("❌ Falta ANTHROPIC_API_KEY en el fichero .env")
+        print("❌ Falta GOOGLE_GEMINI_API_KEY en el fichero .env")
         return None
 
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
+        url,
         data=payload,
         headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01"
+            "Content-Type": "application/json"
         }
     )
 
     try:
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-        text = data["content"][0]["text"].strip()
+        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
         # Limpiar markdown si hay
         text = text.replace("```json", "").replace("```", "").strip()
         extracted = json.loads(text)
