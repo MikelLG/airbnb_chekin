@@ -8,7 +8,7 @@ const path = require('path')
 require('dotenv').config()
 
 const replacements = {
-  '__ANTHROPIC_API_KEY__': process.env.ANTHROPIC_API_KEY || '',
+  '__GOOGLE_GEMINI_API_KEY__': process.env.GOOGLE_GEMINI_API_KEY || '',
   '__ICAL_URL__':          process.env.AIRBNB_ICAL_URL   || '',
   '__ICAL_URL_2__':        process.env.AIRBNB_ICAL_URL_2 || '',
   '__TELEGRAM_BOT_TOKEN__': process.env.TELEGRAM_BOT_TOKEN || '',

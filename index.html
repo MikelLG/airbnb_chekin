@@ -1127,8 +1127,8 @@ let babyCount = 0;
 // ═══════════════════════════════════════════════════════════
 // API KEY — injected at build time by GitHub Actions
 // ═══════════════════════════════════════════════════════════
-const _AK = '__ANTHROPIC_API_KEY__';
-function getKey() { return _AK; }
+const _GEMINI_KEY = '__GOOGLE_GEMINI_API_KEY__';
+function getKey() { return _GEMINI_KEY; }
 const _TG_TOKEN = '__TELEGRAM_BOT_TOKEN__';
 const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
 const _GH_PAT   = '__GH_DISPATCH_PAT__';
@@ -1473,19 +1473,34 @@ function stopCamera() {
 function takePicture() {
   const vid = document.getElementById('vid');
   const canvas = document.getElementById('snap-canvas');
-  canvas.width = vid.videoWidth;
-  canvas.height = vid.videoHeight;
-  canvas.getContext('2d').drawImage(vid, 0, 0);
-  const b64 = canvas.toDataURL('image/jpeg', 0.92);
+  const MAX_PX = 1200;
+  const w = vid.videoWidth, h = vid.videoHeight;
+  const scale = Math.min(1, MAX_PX / Math.max(w, h));
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
+  canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+  const b64 = canvas.toDataURL('image/jpeg', 0.75);
   setSideImage(currentCaptureSide, b64.split(',')[1], 'image/jpeg', b64);
   stopCamera();
 }
 
 function handleFileSide(file, side) {
   if (!file) return;
-  const mime = file.type || 'image/jpeg';
   const reader = new FileReader();
-  reader.onload = e => setSideImage(side, e.target.result.split(',')[1], mime, e.target.result);
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX_PX = 1200;
+      const scale = Math.min(1, MAX_PX / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      setSideImage(side, dataUrl.split(',')[1], 'image/jpeg', dataUrl);
+    };
+    img.src = e.target.result;
+  };
   reader.readAsDataURL(file);
 }
 
@@ -1549,6 +1564,9 @@ Responde SOLO con JSON válido sin markdown:
   try {
     const images = [{ b64: capturedImage, mime: capturedMime }];
     if (capturedImageBack) images.push({ b64: capturedImageBack, mime: capturedMimeBack });
+    const totalKB = images.reduce((sum, img) => sum + (img.b64.length / 1024), 0);
+    console.log(`📸 Imágenes: ${images.length} foto(s), ${totalKB.toFixed(2)} KB total`);
+    images.forEach((img, i) => console.log(`  [${i+1}] ${(img.b64.length / 1024).toFixed(2)} KB`));
     const res = await callClaudeVisionMulti(images, prompt);
 
     dniData = JSON.parse(res.replace(/```json|```/g,'').trim());
@@ -2085,30 +2103,31 @@ async function sendTelegramNotification(fname, blob) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// CLAUDE API CALLS
+// GOOGLE GEMINI API CALLS
 // ═══════════════════════════════════════════════════════════
-async function callClaude(messages) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+async function callGemini(prompt, images = []) {
+  const apiKey = getKey();
+  const content = {
+    parts: images.map(img => ({
+      inlineData: {
+        mimeType: img.mime,
+        data: img.b64
+      }
+    })).concat([{ text: prompt }])
+  };
+
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
     method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': getKey(),
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages })
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ contents: [content] })
   });
   const d = await r.json();
   if (d.error) throw new Error(d.error.message);
-  return d.content[0].text;
+  return d.candidates[0].content.parts[0].text;
 }
 
 async function callClaudeVisionMulti(images, prompt) {
-  const content = images.map(img => ({
-    type:'image', source:{ type:'base64', media_type:img.mime, data:img.b64 }
-  }));
-  content.push({ type:'text', text:prompt });
-  return callClaude([{ role:'user', content }]);
+  return callGemini(prompt, images);
 }
 
 // ═══════════════════════════════════════════════════════════
