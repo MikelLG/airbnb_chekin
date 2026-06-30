@@ -1,75 +1,20 @@
-name: Deploy Check-in Portal
+name: Deploy with Gemini API Key
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches: [main]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Inject secrets into HTML
-        env:
-          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ICAL_URL: ${{ secrets.AIRBNB_ICAL_URL }}
-          ICAL_URL_2: ${{ secrets.AIRBNB_ICAL_URL_2 }}
-          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GH_PAT: ${{ secrets.GH_DISPATCH_PAT }}
-        run: |
-          python3 -c "
-          import os
-          replacements = {
-            '__ANTHROPIC_API_KEY__': os.environ.get('API_KEY', ''),
-            '__ICAL_URL__': os.environ.get('ICAL_URL', ''),
-            '__ICAL_URL_2__': os.environ.get('ICAL_URL_2', ''),
-            '__TELEGRAM_BOT_TOKEN__': os.environ.get('TG_TOKEN', ''),
-            '__TELEGRAM_CHAT_ID__': os.environ.get('TG_CHAT', ''),
-            '__GH_DISPATCH_PAT__': os.environ.get('GH_PAT', ''),
-          }
-          with open('index.html', 'r') as f:
-              content = f.read()
-          for k, v in replacements.items():
-              content = content.replace(k, v)
-          with open('index.html', 'w') as f:
-              f.write(content)
-          print('Secrets injected OK')
-          "
-
-      - name: Verify injection
-        run: |
-          if grep -q '__ANTHROPIC_API_KEY__\|__ICAL_URL__\|__ICAL_URL_2__\|__TELEGRAM\|__GH_DISPATCH' index.html; then
-            echo "ERROR: placeholders still present!"
-            exit 1
-          else
-            echo "OK: all secrets injected"
-          fi
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
+      - name: Inject Gemini API Key into index.html
+        run: sed -i "s/__GOOGLE_GEMINI_API_KEY__/${{ secrets.GOOGLE_GEMINI_API_KEY }}/g" index.html
 
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
