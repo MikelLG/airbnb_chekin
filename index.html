@@ -1127,9 +1127,11 @@ let babyCount = 0;
 // ═══════════════════════════════════════════════════════════
 const _GEMINI_KEY = '__GOOGLE_GEMINI_API_KEY__';
 function getKey() { return _GEMINI_KEY; }
-const _TG_TOKEN = '__TELEGRAM_BOT_TOKEN__';
-const _TG_CHAT  = '__TELEGRAM_CHAT_ID__';
-const _GH_PAT   = '__GH_DISPATCH_PAT__';
+// No bot token, no GitHub PAT and no iCal URLs here on purpose. This page is served
+// publicly from GitHub Pages, and every secret that ever lived in it was harvested:
+// the Telegram bot was hijacked and repointed at an attacker's webhook. Telegram
+// delivery and the Mossos upload are triggered by the dashboard, server-side, from
+// /api/mossos/checkin.
 const _DASHBOARD_URL = 'https://checkin-dashboard-eight.vercel.app';
 const _STRIPE_PK = 'pk_live_51TVVpBFGYGrhFltukuk6FYDe8uH9MjzV3VUkoR4Y96lb7vdHp0CbnIB2ezd0UUGgGBMJugpTl9Kmvde6hXrjHmYT004VtNYxOT';
 const TOURIST_TAX_RATE = 1.75; // € per adult per night (max 7 nights)
@@ -1247,10 +1249,8 @@ function goStep(n) {
 // ═══════════════════════════════════════════════════════════
 // STEP 1 — ROOM SELECTOR + iCAL LOADER
 // ═══════════════════════════════════════════════════════════
-const ICAL_URLS = {
-  1: '__ICAL_URL__',
-  2: '__ICAL_URL_2__'
-};
+// The Airbnb iCal URLs carry an access token, so they stay server-side: the dashboard
+// reads the feeds and exposes the upcoming reservations at /api/properties/reservations.
 const ROOMS = {
   1: { name: '12 min from Sagrada Familia', sub: "Anika's House" },
   2: { name: 'Dos camas a 12 minutos en metro de S. Familia', sub: "Anika's House" }
@@ -1269,16 +1269,8 @@ function selectRoom(n) {
   }, 300);
 }
 
-// Multiple proxies to try in order
-const ICAL_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url=',
-  'https://cors-anywhere.herokuapp.com/'
-];
-
-// The dashboard reads the Airbnb feed server-side. The public CORS proxies below are
-// only a fallback — all three have stopped serving anonymous requests, so in practice
-// this is the path that works.
+// The dashboard reads the Airbnb feed server-side. This replaces the three public CORS
+// proxies this page used to hit directly — all of them now refuse anonymous requests.
 async function loadReservationsFromDashboard(roomNumber) {
   const res = await fetch(`${_DASHBOARD_URL}/api/properties/reservations?property=p${roomNumber}`, { cache: 'no-store' });
   if (!res.ok) throw new Error('dashboard ' + res.status);
@@ -1297,29 +1289,7 @@ async function loadReservationsFromDashboard(roomNumber) {
 
 async function loadIcal(roomNumber) {
   try {
-    let reservations = null;
-    try {
-      reservations = await loadReservationsFromDashboard(roomNumber);
-    } catch(e) {
-      console.warn('Dashboard reservations failed, trying proxies:', e.message);
-    }
-
-    if (!reservations) {
-      const icalUrl = ICAL_URLS[roomNumber];
-      let text = null;
-      let lastErr = null;
-      for (const proxy of ICAL_PROXIES) {
-        try {
-          const res = await fetch(proxy + encodeURIComponent(icalUrl));
-          if (!res.ok) continue;
-          text = await res.text();
-          if (text && text.includes('BEGIN:VCALENDAR')) break;
-          text = null;
-        } catch(e) { lastErr = e; continue; }
-      }
-      if (!text) throw lastErr || new Error('All proxies failed');
-      reservations = parseIcal(text);
-    }
+    let reservations = await loadReservationsFromDashboard(roomNumber);
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + 20);
@@ -1605,7 +1575,7 @@ Responde SOLO con JSON válido sin markdown:
   } catch(e) {
     showErr('err-2', 'No se pudo leer el documento: ' + e.message + '. Puedes introducir los datos manualmente.');
     const reserva = v('f-reserva') || airbnbData.codigo || '—';
-    tgNotify(`⚠️ *Error IA — Check-in*\n📋 Reserva: \`${reserva}\`\n🔴 ${e.message}`);
+    tgNotify(reserva, e.message);
     btn.textContent = 'Escanear documento →';
     btn.disabled = false;
   }
@@ -2008,8 +1978,8 @@ function completeCheckin(cashPayment = false) {
     if (i === 0) return line;
     return line.split('|').map(field => normalizeAscii(field)).join('|');
   }).join('\r\n');
-  sendTelegramNotification(fname, new Blob([_normalized], {type:'text/plain;charset=utf-8'}));
-  triggerMossosUpload(fname);
+  // One call. The dashboard saves the record and, server-side, sends the Telegram
+  // notice and triggers the Mossos robot.
   notifyDashboard(fname, _normalized, window._cashPayment);
 }
 
@@ -2055,80 +2025,15 @@ async function notifyDashboard(fname, normalizedContent, cashPayment = false) {
   }
 }
 
-async function triggerMossosUpload(fname) {
-  if (!_GH_PAT || _GH_PAT.startsWith('__')) return;
+async function tgNotify(airbnbCode, message) {
+  // Templated server-side; the browser no longer holds a bot token.
   try {
-    const normalizedContent = fileContent.split('\r\n').map((line, i) => {
-      if (i === 0) return line;
-      return line.split('|').map(field => normalizeAscii(field)).join('|');
-    }).join('\r\n');
-    const content = btoa(unescape(encodeURIComponent(normalizedContent)));
-    await fetch('https://api.github.com/repos/anikashouse/airbnb_chekin/dispatches', {
+    await fetch(`${_DASHBOARD_URL}/api/notify/ocr-error`, {
       method: 'POST',
-      headers: {
-        'Authorization': `token ${_GH_PAT}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        event_type: 'mossos-upload',
-        client_payload: {
-          filename: fname,
-          content,
-          recordId: (v('f-reserva') || airbnbData.codigo || '').toUpperCase(),
-          dashboardUrl: _DASHBOARD_URL,
-        }
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ airbnbCode, message })
     });
-    console.log('GitHub Actions upload triggered');
-  } catch(e) {
-    console.warn('GitHub dispatch failed:', e.message);
-  }
-}
-
-async function tgNotify(text) {
-  if (!_TG_TOKEN || _TG_TOKEN.startsWith('__')) return;
-  try {
-    await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ chat_id: _TG_CHAT, text, parse_mode:'Markdown' })
-    });
-  } catch(e) { console.warn('Telegram notify failed:', e.message); }
-}
-
-async function sendTelegramNotification(fname, blob) {
-  if (!_TG_TOKEN || _TG_TOKEN.startsWith('__')) return;
-  const allGuests = [...guestsList, readCurrentGuest()];
-  const names = allGuests.map(g => `${g[5]} ${g[3]} ${g[4]}`.trim()).join(', ');
-  const reserva = v('f-reserva') || '—';
-  const entrada = v('f-entrada') || '—';
-  const salida  = v('f-salida')  || '—';
-  const hab = document.querySelector('.room-card.selected .room-name')?.textContent || ESTAB.nom;
-
-  const cashFlag = window._cashPayment
-    ? `\n💵 *TASA TURÍSTICA: PAGO EN EFECTIVO PENDIENTE*`
-    : `\n💳 Tasa turística pagada online`;
-
-  const text = `🏠 *Check-in completado*\n` +
-    `📋 Reserva: \`${reserva}\`\n` +
-    `🛏 Habitación: ${hab}\n` +
-    `👤 Huésped${allGuests.length > 1 ? 'es' : ''}: ${names}\n` +
-    `📅 ${entrada} → ${salida}\n` +
-    `📄 Fichero: \`${fname}\`` +
-    cashFlag + `\n` +
-    `⏳ _Pendiente subir a Mossos_`;
-
-  try {
-    const fd = new FormData();
-    fd.append('chat_id', _TG_CHAT);
-    fd.append('document', blob, fname);
-    fd.append('caption', text);
-    fd.append('parse_mode', 'Markdown');
-    await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendDocument`, { method:'POST', body:fd });
-  } catch(e) {
-    console.warn('Telegram notification failed:', e.message);
-  }
+  } catch(e) { console.warn('Alert failed:', e.message); }
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -15,11 +15,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inject secrets into index.html
+      # This page is served publicly, so anything injected here is public. The Telegram
+      # token, the GitHub PAT and the tokenised iCal URLs used to be injected and were
+      # harvested — the bot got hijacked. They now live server-side in the dashboard and
+      # must never come back here. The Gemini key is the last one still exposed.
+      - name: Inject Gemini API key into index.html
         run: |
           sed -i "s/__GOOGLE_GEMINI_API_KEY__/${{ secrets.GOOGLE_GEMINI_API_KEY }}/g" index.html
-          sed -i "s|__ICAL_URL__|${{ secrets.AIRBNB_ICAL_URL }}|g" index.html
-          sed -i "s|__ICAL_URL_2__|${{ secrets.AIRBNB_ICAL_URL_2 }}|g" index.html
+
+      - name: Fail if a secret placeholder survived
+        run: |
+          if grep -q '__GOOGLE_GEMINI_API_KEY__' index.html; then
+            echo "ERROR: Gemini key was not injected"
+            exit 1
+          fi
+
+      - name: Fail if a server-side secret leaked into the page
+        run: |
+          if grep -qE 'api\.telegram\.org|api\.github\.com/repos/[^ ]*/dispatches|calendar/ical/[0-9]+\.ics' index.html; then
+            echo "ERROR: page contains a secret or a direct call that belongs server-side"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
