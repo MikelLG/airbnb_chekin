@@ -122,6 +122,7 @@ async function uploadToMossos(filePath) {
   const isCI = process.env.CI === 'true';
   const browser = await chromium.launch({ headless: isCI, slowMo: isCI ? 0 : 600 });
   const page = await browser.newPage();
+  let failure = null;
 
   try {
     // PASO 1: LOGIN
@@ -326,6 +327,7 @@ async function uploadToMossos(filePath) {
       console.log(`\n⚠️  ${reason}. Ver mossos_result.png`);
       await tg(`⚠️ *Mossos — ${hasError ? 'Error de validación' : 'Sin confirmación'}*\n📄 \`${path.basename(absPath)}\`\n${hasError ? '🔴 Revisa el fichero .txt (campos, separadores)' : 'Revisa mossos_result.png'}`);
       await sendEmail(`⚠️ Mossos — ${hasError ? 'Error validación' : 'Sin confirmación'}`, `${reason}.\n\nFichero: ${path.basename(absPath)}`);
+      failure = reason;
     }
 
   } catch (err) {
@@ -333,9 +335,17 @@ async function uploadToMossos(filePath) {
     await page.screenshot({ path: 'mossos_error.png' }).catch(() => {});
     await tg(`❌ *Mossos — Error*\n📄 \`${path.basename(absPath)}\`\n🔴 ${err.message}`);
     await sendEmail(`❌ Mossos — Error`, `Error al subir fichero.\n\nFichero: ${path.basename(absPath)}\nError: ${err.message}`);
+    failure = err.message;
   } finally {
     await page.waitForTimeout(2000);
     await browser.close();
+  }
+
+  // Telegram and email are best-effort and have both silently failed before, so the
+  // exit code is the only alarm that always survives. Make it count.
+  if (failure) {
+    console.error(`\n❌ Subida NO completada: ${failure}`);
+    process.exitCode = 1;
   }
 }
 

@@ -1265,7 +1265,7 @@ function selectRoom(n) {
   setTimeout(() => {
     document.getElementById('room-selector').style.display = 'none';
     document.getElementById('ical-loading').style.display = 'block';
-    loadIcal(ICAL_URLS[n]);
+    loadIcal(n);
   }, 300);
 }
 
@@ -1276,23 +1276,54 @@ const ICAL_PROXIES = [
   'https://cors-anywhere.herokuapp.com/'
 ];
 
-async function loadIcal(icalUrl) {
+// The dashboard reads the Airbnb feed server-side. The public CORS proxies below are
+// only a fallback — all three have stopped serving anonymous requests, so in practice
+// this is the path that works.
+async function loadReservationsFromDashboard(roomNumber) {
+  const res = await fetch(`${_DASHBOARD_URL}/api/properties/reservations?property=p${roomNumber}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('dashboard ' + res.status);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) throw new Error('bad payload');
+  return rows.map(r => ({
+    codigo: r.codigo,
+    entrada: r.entrada,
+    salida: r.salida,
+    num_huespedes: r.huespedes || 1,
+    hora_entrada: '1500',
+    hora_salida: '1100',
+    tel_suffix: r.tel_suffix || null,
+  }));
+}
+
+async function loadIcal(roomNumber) {
   try {
-    let text = null;
-    let lastErr = null;
-    for (const proxy of ICAL_PROXIES) {
-      try {
-        const res = await fetch(proxy + encodeURIComponent(icalUrl));
-        if (!res.ok) continue;
-        text = await res.text();
-        if (text && text.includes('BEGIN:VCALENDAR')) break;
-        text = null;
-      } catch(e) { lastErr = e; continue; }
+    let reservations = null;
+    try {
+      reservations = await loadReservationsFromDashboard(roomNumber);
+    } catch(e) {
+      console.warn('Dashboard reservations failed, trying proxies:', e.message);
     }
-    if (!text) throw lastErr || new Error('All proxies failed');
+
+    if (!reservations) {
+      const icalUrl = ICAL_URLS[roomNumber];
+      let text = null;
+      let lastErr = null;
+      for (const proxy of ICAL_PROXIES) {
+        try {
+          const res = await fetch(proxy + encodeURIComponent(icalUrl));
+          if (!res.ok) continue;
+          text = await res.text();
+          if (text && text.includes('BEGIN:VCALENDAR')) break;
+          text = null;
+        } catch(e) { lastErr = e; continue; }
+      }
+      if (!text) throw lastErr || new Error('All proxies failed');
+      reservations = parseIcal(text);
+    }
+
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + 20);
-    const reservations = parseIcal(text).filter(r => {
+    reservations = reservations.filter(r => {
       const checkin = new Date(r.entrada);
       return checkin <= cutoff;
     });
